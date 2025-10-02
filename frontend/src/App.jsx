@@ -26,7 +26,7 @@ import AllProducts from "./pages/AllProducts";
 import { useEffect } from "react";
 import {io} from 'socket.io-client'
 import { setSocket } from "./redux/userSlice";
-import Shop from "./pages/shop";
+import Shop from "./pages/Shop";
 export const serverURL = "https://grocery-backend-hwd9.onrender.com";
 
 
