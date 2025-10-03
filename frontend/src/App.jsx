@@ -27,7 +27,7 @@ import { useEffect } from "react";
 import {io} from 'socket.io-client'
 import { setSocket } from "./redux/userSlice";
 import Shop from "./pages/Shop";
-export const serverURL = "https://grocery-backend-hwd9.onrender.com";
+export const serverURL = "https://grocery-4ltf.onrender.com"
 
 
 const App = () => {
