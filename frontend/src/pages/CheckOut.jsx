@@ -158,7 +158,7 @@ handler:async function (response) {
 
   return (
     <>
-       <div className="min-h-screen bg-[#fff9f6] flex items-center justify-center p-6">
+       <div className="min-h-screen flex items-center justify-center p-6">
       {/* 🔙 Back Button */}
       <div
         className="absolute top-[20px] left-[20px] z-10 cursor-pointer"
@@ -168,7 +168,7 @@ handler:async function (response) {
       </div>
 
       {/* 🧾 Checkout Card */}
-      <div className="w-full max-w-[900px] bg-white rounded-2xl shadow-xl p-6 space-y-6">
+      <div className="w-full max-w-[900px] bg-white rounded-2xl p-6 space-y-6">
         <h1 className="text-2xl font-bold text-gray-800">Checkout</h1>
 
         {/* 📍 Delivery Location Section */}

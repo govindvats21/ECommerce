@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import Nav from "../components/Nav";
 import { useDispatch, useSelector } from "react-redux";
-import { CiShoppingCart } from "react-icons/ci";
+
 import { useNavigate } from "react-router-dom";
 import { addToCart } from "../redux/userSlice";
 import Footer from "../components/Footer";
+import { FaShoppingCart } from "react-icons/fa";
 
 const AllProducts = () => {
   const { itemsInMyCity } = useSelector((state) => state.user);
@@ -235,20 +236,19 @@ const AllProducts = () => {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
               {paginatedItems.map((item) => (
-                <div
-                  key={item._id}
-                  className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all flex flex-col cursor-pointer"
+                    <div
+      className="w-[180px] md:w-[200px] rounded-lg border border-gray-200 bg-white p-2 flex flex-col gap-1 cursor-pointer"
                   onClick={() => navigate(`/single-item/${item._id}`)}
                 >
                   {/* Product Image with Discount Badge */}
-                  <div className="relative w-full h-28 sm:h-32 md:h-36 flex items-center justify-center rounded-t-lg overflow-hidden">
+<div className="relative w-full h-24 md:h-32 flex items-center justify-center overflow-hidden rounded-md bg-white">
                     <img
                       src={
                         item?.images?.[0]?.image1 ||
                         "https://via.placeholder.com/150"
                       }
                       alt={item?.name}
-                      className="max-h-full max-w-full object-contain transition-transform hover:scale-105"
+                     className="object-contain max-h-full"
                     />
                     {item?.originalPrice && item?.discountPrice && (
                       <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
@@ -297,7 +297,7 @@ const AllProducts = () => {
 
                     {/* Add to Cart */}
                     <button
-                      className="mt-auto bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg w-full py-2 flex items-center justify-center gap-2 transition"
+                      className="w-full h-8 rounded-md border border-green-500 text-green-600 bg-green-50 hover:bg-green-100 text-sm font-semibold flex items-center justify-center mt-1"
                       onClick={(e) => {
                         e.stopPropagation();
                         dispatch(
@@ -312,8 +312,8 @@ const AllProducts = () => {
                         );
                       }}
                     >
-                      <CiShoppingCart size={18} />
-                      Add to Cart
+                      <FaShoppingCart size={12} className="mr-1" />
+                      Add 
                     </button>
                   </div>
                 </div>

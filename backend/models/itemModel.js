@@ -34,7 +34,7 @@ const itemSchema = new mongoose.Schema(
   "Fruits",
   "Vegetables",
   "Dairy & Bakery",
-  "Snacks & Branded Foods",
+  "Snacks",
   "Beverages",
   "Personal Care",
   "Household Essentials",
@@ -55,13 +55,6 @@ const itemSchema = new mongoose.Schema(
     description: {
       type: String,
     },
-    availability: {
-      type: Boolean,
-      default: true,
-    },
- ratings: [ratingSchema],
-  averageRating: { type: Number, default: 0 },
-  
   },
   { timestamps: true }
 );

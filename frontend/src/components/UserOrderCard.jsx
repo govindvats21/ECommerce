@@ -20,32 +20,6 @@ const UserOrderCard = ({ data }) => {
   console.log(data);
   // State
 
-// Rating Handler
-const handleRating = async (item) => {
-  try {
-    const itemId = item?.item?._id; // safe itemId
-    const rating = selectedRating[itemId]; // current rating
-
-    if (!itemId) return console.error("Item ID not found");
-
-    const res = await axios.post(
-      `${serverURL}/api/item/rateItem`,
-      { itemId, rating },
-      { withCredentials: true }
-    );
-
-    console.log("Rating response:", res.data);
-
-    // frontend update
-    setSelectedRating(prev => ({
-      ...prev,
-      [itemId]: rating,
-    }));
-
-  } catch (error) {
-    console.error("Rating error:", error.response?.data || error.message);
-  }
-};
 
 
   return (
@@ -112,33 +86,6 @@ const handleRating = async (item) => {
                 <p className="text-xs text-gray-500">
                   Qty: {item.quantity} × ₹{item.price}
                 </p>
-
-                {shopOrder?.status === "delivered" && (
-  <div className="flex space-x-1 mt-2">
-    {[1, 2, 3, 4, 5].map((star) => {
-      const itemId =  item?._id;
-      return (
-        <button
-          key={star}
-          className={`text-lg ${
-            selectedRating[itemId] >= star ? "text-yellow-400" : "text-gray-400"
-          }`}
-          onClick={() =>
-            setSelectedRating(prev => {
-              const newRating = { ...prev, [itemId]: star };
-              // call backend immediately
-              handleRating({ ...item, _id: itemId });
-              return newRating;
-            })
-          }
-        >
-          ★
-        </button>
-      );
-    })}
-  </div>
-)}
-
               </div>
             ))}
           </div>

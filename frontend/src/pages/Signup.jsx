@@ -84,7 +84,7 @@ try {
       <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-8 border-[#ff4d2d]">
       <form onSubmit={handleSubmit(handleSignUp)}>
 
-          <h1 className="text-3xl font-bold mb-2 text-[#ff4d2d]">Vingo</h1>
+          <h1 className="text-3xl font-bold mb-2 text-[#ff4d2d]">vats</h1>
 
           <p className="text-gray-600 mb-2">
             Create your account to get started with delicious food deliveries

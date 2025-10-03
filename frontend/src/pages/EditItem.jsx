@@ -6,12 +6,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 import { setMyShopData } from "../redux/ownerSlice";
 import { serverURL } from "../App";
+import { setItemsOutOfStock } from "../redux/userSlice";
 
 const categories = [
   "Fruits",
   "Vegetables",
   "Dairy & Bakery",
-  "Snacks & Branded Foods",
+  "Snacks",
   "Beverages",
   "Personal Care",
   "Household Essentials",
@@ -28,10 +29,15 @@ const EditItem = () => {
   const { myShopData } = useSelector((state) => state.owner);
 
   // States for images
-  const [frontendImages, setFrontendImages] = useState([null, null, null, null]);
+  const [frontendImages, setFrontendImages] = useState([
+    null,
+    null,
+    null,
+    null,
+  ]);
   const [backendImages, setBackendImages] = useState([null, null, null, null]);
   const [oldImages, setOldImages] = useState([]);
-
+  // 🔹 Local state
   const {
     register,
     handleSubmit,
@@ -92,6 +98,7 @@ const EditItem = () => {
       );
 
       dispatch(setMyShopData(res.data));
+
       navigate("/");
     } catch (error) {
       console.error("Error updating item:", error);
@@ -243,7 +250,9 @@ const EditItem = () => {
 
         {/* Category */}
         <div>
-          <label className="block text-gray-700 font-semibold mb-1">Category</label>
+          <label className="block text-gray-700 font-semibold mb-1">
+            Category
+          </label>
           <select
             {...register("category", { required: "Category is required" })}
             className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
@@ -258,7 +267,9 @@ const EditItem = () => {
             ))}
           </select>
           {errors.category && (
-            <p className="text-red-600 text-sm mt-1">{errors.category.message}</p>
+            <p className="text-red-600 text-sm mt-1">
+              {errors.category.message}
+            </p>
           )}
         </div>
 

@@ -86,24 +86,28 @@ export const editItemById = async (req, res) => {
     const item = await Item.findById(itemId);
     if (!item) return res.status(400).json({ message: "Item not found" });
 
-    // merge old + new images
-    const images = item.images || {}; // current images
+    // पुरानी images को copy कर लो
+    let images = item.images ? { ...item.images } : {};
 
-    if (req.files) {
+    // अगर नई images आई हैं तो replace करो
+    if (req.files && req.files.length > 0) {
       for (let i = 0; i < req.files.length; i++) {
         const uploadedUrl = await uploadOnCloudinary(req.files[i].path);
-        images[`image${i + 1}`] = uploadedUrl; // overwrite only the uploaded slot
+
+        // index से key बनाओ (image1, image2, image3, image4)
+        const key = `image${i + 1}`;
+        images[key] = uploadedUrl; 
       }
     }
 
-    // update basic fields
+    // अब बाकी details update करो
     item.name = name;
     item.category = category;
     item.discountPrice = discountPrice;
     item.originalPrice = originalPrice;
     item.description = description;
+    item.images = images; // पुरानी + नई दोनों images save होंगी
 
-    item.images = images;
     await item.save();
 
     const shop = await Shop.findOne({ owner: req.userId })
@@ -120,6 +124,7 @@ export const editItemById = async (req, res) => {
       .json({ message: `Edit item error: ${error.message}` });
   }
 };
+
 
 // delete item
 
@@ -176,38 +181,7 @@ export const getItemBycity = async (req, res) => {
 };
 
 
-export const rateItem = async (req, res) => {
-  try {
-    const { itemId, rating } = req.body;
 
-    if (!itemId || !rating) {
-      return res.status(400).json({ message: "ItemId & rating required" });
-    }
-
-    const item = await Item.findById(itemId);
-    if (!item) {
-      return res.status(404).json({ message: "Item not found" });
-    }
-
-    // user ne pehle rating di hai to update kar do
-    const existingRating = item.ratings.find(
-      (r) => r.user.toString() === req.userId
-    );
-
-    if (existingRating) {
-      existingRating.rating = rating;
-    } else {
-      item.ratings.push({ user: req.userId, rating });
-    }
-
-    item.calculateAverageRating();
-    await item.save();
-
-    return res.status(200).json({ message: "Rating submitted", item });
-  } catch (error) {
-    return res.status(500).json({ message: `Rating error: ${error.message}` });
-  }
-};
 
 
 

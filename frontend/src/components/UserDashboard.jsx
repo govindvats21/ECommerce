@@ -16,101 +16,110 @@ const UserDashboard = () => {
   );
 
   const [updatedItemsList, setupdatedItemsList] = useState([]);
+  const [itemsByCategory, setItemsByCategory] = useState({});
+  const [clickCategoryItem, setClickCategoryItem] = useState([]); // This will hold the filtered items
 
+  // Rebuild itemsByCategory every time itemsInMyCity changes
   useEffect(() => {
-    setupdatedItemsList(itemsInMyCity);
+    if (itemsInMyCity && itemsInMyCity.length > 0) {
+      const groupedItems = {};
+      itemsInMyCity.forEach(item => {
+        const cat = item.category || "All";
+        if (!groupedItems[cat]) groupedItems[cat] = [];
+        groupedItems[cat].push(item);
+      });
+      setItemsByCategory(groupedItems); // Set all items grouped by category
+    }
   }, [itemsInMyCity]);
 
-  // 🟢 Category-wise grouping using forEach
-  const itemsByCategory = {};
-  updatedItemsList.forEach((item) => {
-    const cat = item.category || "Others";
-    if (!itemsByCategory[cat]) itemsByCategory[cat] = [];
-    itemsByCategory[cat].push(item);
-  });
+  // Set updatedItemsList to all items initially
+  useEffect(() => {
+    if (itemsInMyCity && itemsInMyCity.length > 0) {
+      setupdatedItemsList(itemsInMyCity);
+      setClickCategoryItem(itemsInMyCity); // Default show all items
+    }
+  }, [itemsInMyCity]);
+
+  // Filter items by category and set clickCategoryItem state
+  const handleFilterByCategory = (category) => {
+    if (category === "All") {
+      setClickCategoryItem(itemsInMyCity); // Show all items
+    } else {
+      const filteredItems = itemsInMyCity?.filter(item => item?.category == category);
+      setClickCategoryItem(filteredItems); // Set filtered items to display
+    }
+  };
 
   return (
     <>
-    <div className="w-screen min-h-screen bg-white flex flex-col gap-5 items-center overflow-y-auto">
-      <Nav />
+      <div className="w-screen min-h-screen bg-white flex flex-col gap-5 items-center overflow-y-auto">
+        <Nav />
 
-      {searchItems && searchItems.length > 0 && (
-        <div className="w-full max-w-6xl flex flex-col gap-6 items-start p-6 bg-white shadow-lg rounded-2xl mt-4 border border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-800 border-b pb-2 w-full">
-            🔍 Search Results
-          </h1>
-          <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {searchItems.map((item) => (
-              <ItemCard data={item} key={item._id} />
-            ))}
+        {/* Search results */}
+        {searchItems && searchItems.length > 0 && (
+          <div className="w-full max-w-6xl flex flex-col gap-6 items-start p-6 bg-white shadow-lg rounded-2xl mt-4 border border-gray-200">
+            <h1 className="text-2xl font-bold text-gray-800 border-b pb-2 w-full">🔍 Search Results</h1>
+            <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              {searchItems.map((item) => (
+                <ItemCard data={item} key={item._id} />
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Banner */}
+        <div className="relative w-full">
+          <img src={mainBaner} alt="Banner" className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover" />
+          <button className="absolute bottom-4 sm:bottom-8 left-4 sm:left-10 font-bold text-sm sm:text-lg text-white bg-green-500 px-4 py-2 rounded shadow-md hover:bg-green-600 transition">
+            Shop now
+          </button>
         </div>
-      )}
 
-     {/* Banner */}
-<div className="relative w-full">
-  <img
-    src={mainBaner}
-    alt="Banner"
-    className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover"
-  />
-  <button className="absolute bottom-4 sm:bottom-8 left-4 sm:left-10 font-bold text-sm sm:text-lg text-white bg-green-500 px-4 py-2 rounded shadow-md hover:bg-green-600 transition">
-    Shop now
-  </button>
-</div>
-
-      {/* Categories */}
-      <div className="w-full grid grid-cols-3 md:flex md:flex-wrap items-center justify-center gap-5 md:px-40 px-2">
-        {categories?.map((cate, index) => (
-          <CategoryCard
-            name={cate?.category}
-            image={cate?.image}
-            key={index}
-          />
-        ))}
-      </div>
-
-      {/* Shops */}
-      <div className="w-full max-w-6xl mx-auto mt-7 flex flex-col gap-5 p-[10px]">
-        <h1 className="text-gray-800 text-2xl">Best Shop in {userCity}</h1>
-        <div className="w-full grid grid-cols-3 md:flex md:flex-wrap items-center justify-center overflow-x-auto gap-4 pb-2 scrollbar-thin scrollbar-thumb-[#ff4d2d] scrollbar-track-transparent scroll-smooth">
-          {shopsInMyCity?.map((shop, index) => (
-            <ShopCard
-              key={shop._id || index}
-              name={shop?.name}
-              image={shop?.image}
-              id={shop?._id}
-              onClick={() => navigate(`/shop/${shop._id}`)}
+        {/* Categories */}
+        <div className="w-full grid grid-cols-3 md:flex md:flex-wrap items-center justify-center gap-5 md:px-40 px-2">
+          {categories?.map((cate, index) => (
+            <CategoryCard
+              name={cate?.category}
+              image={cate?.image}
+              key={index}
+              onClick={() => handleFilterByCategory(cate?.category)}
             />
           ))}
         </div>
-      </div>
 
-     {/* Items Category-wise */}
-<div className="w-full max-w-6xl mx-auto flex flex-col gap-10 p-[10px] ">
-  {Object.keys(itemsByCategory).map((category, index) => (
-    <div key={index} className="flex flex-col gap-4">
-      <h2 className="text-gray-800 text-2xl font-semibold">{category}</h2>
-      
-      {/* Horizontal Scroll */}
-      <div className="flex gap-5 md:gap-20 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
-        {itemsByCategory[category].map((item, idx) => (
-          <div key={idx} className=" flex-shrink-0  w-[190px]  ">
-            <ItemCard data={item} />
+        {/* Shops */}
+        <div className="w-full max-w-6xl mx-auto mt-7 flex flex-col gap-5 p-[10px]">
+          <h1 className="text-gray-800 text-2xl">Best Shop in {userCity}</h1>
+          <div className="w-full grid grid-cols-3 md:flex md:flex-wrap items-center justify-center overflow-x-auto gap-4 pb-2 scrollbar-thin scrollbar-thumb-[#ff4d2d] scrollbar-track-transparent scroll-smooth">
+            {shopsInMyCity?.map((shop, index) => (
+              <ShopCard key={shop._id || index} name={shop?.name} image={shop?.image} id={shop?._id} onClick={() => navigate(`/shop/${shop._id}`)} />
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Render Items Category-wise */}
+        <div className="w-full max-w-6xl mx-auto flex flex-col gap-10 p-[10px]">
+          {clickCategoryItem.length > 0 && Object.keys(itemsByCategory).map((category, index) => (
+            // Only render categories that have filtered items
+            clickCategoryItem.some(item => item.category === category) && (
+              <div key={index} className="flex flex-col gap-4">
+                <h2 className="text-gray-800 text-2xl font-semibold">{category}</h2>
+
+                {/* Horizontal Scroll */}
+                <div className="flex md:gap-5 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+                  {clickCategoryItem.filter(item => item.category === category).map((item, idx) => (
+                    <div key={idx} className=" flex-shrink-0 w-[190px]">
+                      <ItemCard data={item} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          ))}
+        </div>
       </div>
-    </div>
-  ))}
-</div>
-
-
-
-    </div>
-<Footer />
-    
-    
-  </>
+      <Footer />
+    </>
   );
 };
 
