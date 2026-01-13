@@ -22,7 +22,11 @@ import TrackOrderPage from "./pages/TrackOrderPage";
 import SingleItem from "./pages/SingleItem";
 import AllProducts from "./pages/AllProducts";
 import Shop from "./pages/Shop";
+<<<<<<< HEAD
 import CategoryPage from "./pages/CategoryPage";
+=======
+export const serverURL = "https://grocery-4ltf.onrender.com"
+>>>>>>> 4fa5e795b6277151b1556a3aa282dd6039b39f0d
 
 // Hooks
 import useGetCity from "./hooks/useGetCity";

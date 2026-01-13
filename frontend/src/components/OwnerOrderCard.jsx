@@ -8,7 +8,7 @@ import { updateOrderStatus } from "../redux/userSlice";
 const OwnerOrderCard = ({ data }) => {
   const dispatch = useDispatch();
 
-  const getImageUrl = (item) => {
+  const getImageUrl = (item) => 
     // 1. Direct item images array check karein
     // 2. Populated item object ki images check karein
     const path = item?.images?.[0] || item?.item?.images?.[0];
