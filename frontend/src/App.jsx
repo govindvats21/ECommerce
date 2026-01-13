@@ -8,6 +8,8 @@ import Nav from "./components/Nav"; // Nav ko yahan import karein
 
 // Pages
 import Home from "./pages/Home";
+
+import CategoryPage from "./pages/CategoryPage";
 import Signup from "./pages/Signup";
 import Signin from "./pages/Sigin";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -22,11 +24,7 @@ import TrackOrderPage from "./pages/TrackOrderPage";
 import SingleItem from "./pages/SingleItem";
 import AllProducts from "./pages/AllProducts";
 import Shop from "./pages/Shop";
-<<<<<<< HEAD
-import CategoryPage from "./pages/CategoryPage";
-=======
-export const serverURL = "https://grocery-4ltf.onrender.com"
->>>>>>> 4fa5e795b6277151b1556a3aa282dd6039b39f0d
+
 
 // Hooks
 import useGetCity from "./hooks/useGetCity";
