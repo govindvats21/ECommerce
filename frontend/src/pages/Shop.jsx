@@ -6,8 +6,6 @@ import {
   FaArrowLeft,
   FaMapMarkerAlt,
   FaStoreAlt,
-  FaStar,
-  FaClock,
   FaShoppingBasket,
   FaUtensils,
 } from "react-icons/fa";
@@ -15,6 +13,7 @@ import {
 import ItemCard from "../components/ItemCard";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
+import { FaAward, FaLeaf } from "react-icons/fa6";
 
 const Shop = () => {
   const { shopId } = useParams();
@@ -82,18 +81,18 @@ const Shop = () => {
 
             {/* Features Section */}
             <div className="flex flex-wrap gap-6 text-sm text-gray-700">
-              <div className="flex items-center gap-2">
-                <FaStar className="text-yellow-400" />
-                <span>{shop.rating || "4.5"} Rating</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FaClock className="text-blue-500" />
-                <span>{shop.deliveryTime || "30-40 mins"}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FaShoppingBasket className="text-green-500" />
-                <span>Min. Order ₹{shop.minOrder || 200}</span>
-              </div>
+              {/* Certified Shop Badge */}
+  <div className="flex items-center gap-2">
+    <FaAward className="text-teal-500" />
+    <span className="font-semibold">Certified Shop</span>
+  </div>
+              {/* Sustainability Focus */}
+<div className="flex items-center gap-2">
+  <FaLeaf className="text-green-500" />
+  <span className="font-semibold">Eco-Friendly Products</span>
+</div>
+
+             
             </div>
           </div>
 

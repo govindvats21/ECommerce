@@ -1,40 +1,34 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import axios from "axios";
 import { setUserAddress, setUserCity, setUserState } from "../redux/userSlice";
 import { setAddress, setLocation } from "../redux/mapSlice";
 
 function useGetCity() {
   const dispatch = useDispatch();
 
-  const apiKey = import.meta.env.VITE_GEOAPIKEY;
-
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(async (position) => {
+    // --- LOCATION AUTO-DETECTION REMOVED ---
+    // Ab hum GPS coordinates nahi maangenge. 
+    // Seedha default values set karenge taaki app bina popup ke chale.
+
+    const setDefaultLocation = () => {
       try {
-        const { latitude, longitude } = position.coords;
-
-        dispatch(setLocation({ lat: latitude, lon: longitude }));
-
-        const res = await axios.get(
-          `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&format=json&apiKey=${apiKey}`
-        );
-        //  const result = res?.data?.results?.[0];
-
-        if (res) {
-          dispatch(
-            setUserCity(res?.data?.results?.[0].county) ||
-              res?.data?.results?.[0].city
-          );
-          dispatch(setUserState(res?.data?.results?.[0].state));
-          dispatch(setUserAddress(res?.data?.results?.[0].address_line2));
-          dispatch(setAddress(res?.data?.results?.[0].address_line2));
-        }
+        // Aap yahan apni marzi ki default city/state rakh sakte hain
+        dispatch(setUserCity("All Cities"));
+        dispatch(setUserState("Available"));
+        dispatch(setUserAddress("Select Delivery Address"));
+        
+        // Map slice ke liye default coordinates (optional)
+        dispatch(setLocation({ lat: 0, lon: 0 }));
+        dispatch(setAddress("Select Delivery Address"));
+        
       } catch (error) {
-        console.log(error);
+        console.log("Error setting default city:", error);
       }
-    });
-  }, [dispatch, apiKey]);
+    };
+
+    setDefaultLocation();
+  }, [dispatch]);
 }
 
 export default useGetCity;

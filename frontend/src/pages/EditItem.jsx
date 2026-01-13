@@ -1,59 +1,45 @@
 import React, { useEffect, useState } from "react";
-import { FaUtensils, FaSave } from "react-icons/fa";
+import { FaSave, FaBoxOpen, FaArrowLeft, FaDatabase } from "react-icons/fa"; // FaDatabase icon add kiya
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 import { setMyShopData } from "../redux/ownerSlice";
 import { serverURL } from "../App";
-import { setItemsOutOfStock } from "../redux/userSlice";
-
-const categories = [
-  "Fruits",
-  "Vegetables",
-  "Dairy & Bakery",
-  "Snacks",
-  "Beverages",
-  "Personal Care",
-  "Household Essentials",
-  "Baby Care",
-  "Packaged Food",
-  "Health & Wellness",
-];
 
 const EditItem = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { id } = useParams();
-
   const { myShopData } = useSelector((state) => state.owner);
 
-  // States for images
-  const [frontendImages, setFrontendImages] = useState([
-    null,
-    null,
-    null,
-    null,
-  ]);
+  const [frontendImages, setFrontendImages] = useState([null, null, null, null]);
   const [backendImages, setBackendImages] = useState([null, null, null, null]);
   const [oldImages, setOldImages] = useState([]);
-  // 🔹 Local state
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm();
+  const [loading, setLoading] = useState(false);
 
+  const { register, handleSubmit, setValue, watch } = useForm();
+  const selectedCategory = watch("category");
+
+  // Load existing item data
   useEffect(() => {
-    if (myShopData && myShopData.items) {
+    if (myShopData?.items) {
       const item = myShopData.items.find((it) => it._id === id);
       if (item) {
         setValue("name", item.name);
+        setValue("brand", item.brand);
         setValue("originalPrice", item.originalPrice);
         setValue("discountPrice", item.discountPrice);
         setValue("description", item.description);
         setValue("category", item.category);
+        setValue("stock", item.stock); // Stock value set ho rahi hai
+
+        if (item.attributes) {
+          setValue("colors", item.attributes.colors?.join(", "));
+          setValue("sizes", item.attributes.sizes?.join(", "));
+          setValue("ram", item.attributes.ram?.join(", "));
+          setValue("storage", item.attributes.storage?.join(", "));
+        }
 
         const imgs = item.images ? Object.values(item.images) : [];
         setOldImages(imgs);
@@ -75,86 +61,78 @@ const EditItem = () => {
   };
 
   const formSubmit = async (details) => {
+    setLoading(true);
     try {
       const formData = new FormData();
+
       formData.append("name", details.name);
+      formData.append("brand", details.brand || "");
+      formData.append("category", details.category);
       formData.append("originalPrice", details.originalPrice);
       formData.append("discountPrice", details.discountPrice);
+      formData.append("stock", details.stock || 0); // Stock value append ho rahi hai
       formData.append("description", details.description);
-      formData.append("category", details.category);
+
+      const attributes = {
+        colors: details.colors ? details.colors.split(",").map(s => s.trim()) : [],
+        sizes: details.sizes ? details.sizes.split(",").map(s => s.trim()) : [],
+        ram: details.ram ? details.ram.split(",").map(s => s.trim()) : [],
+        storage: details.storage ? details.storage.split(",").map(s => s.trim()) : [],
+      };
+      
+      formData.append("attributes", JSON.stringify(attributes));
 
       for (let i = 0; i < 4; i++) {
         if (backendImages[i]) {
-          formData.append("images", backendImages[i]);
+          formData.append("images", backendImages[i]); 
         } else if (oldImages[i]) {
-          formData.append("images", oldImages[i]);
+          formData.append("oldImages", oldImages[i]); 
         }
       }
 
-      const res = await axios.post(
-        `${serverURL}/api/item/edit-item/${id}`,
-        formData,
-        { withCredentials: true }
-      );
+      const res = await axios.post(`${serverURL}/api/item/edit-item/${id}`, formData, {
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" }
+      });
 
       dispatch(setMyShopData(res.data));
-
-      navigate("/");
+      navigate("/owner-dashboard");
     } catch (error) {
-      console.error("Error updating item:", error);
-      alert("Error updating item. Please try again.");
+      alert(error.response?.data?.message || "Error updating item");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-green-50 p-8 flex items-center justify-center">
-      <form
-        onSubmit={handleSubmit(formSubmit)}
-        className="max-w-xl w-full bg-white rounded-xl shadow-md p-8 space-y-6"
-      >
-        {/* Header */}
-        <div className="flex flex-col items-center">
-          <div className="bg-green-100 p-4 rounded-full mb-4">
-            <FaUtensils className="text-green-600 w-16 h-16" />
-          </div>
-          <h2 className="text-3xl font-extrabold text-gray-900">
-            Edit Grocery Item
-          </h2>
-        </div>
+    <div className="min-h-screen bg-[#fcfcfc] p-6 md:p-12 flex flex-col items-center">
+      <div className="w-full max-w-3xl flex items-center mb-8">
+         <button onClick={() => navigate(-1)} className="p-3 bg-white rounded-full shadow-sm hover:shadow-md transition-all">
+            <FaArrowLeft className="text-gray-600" />
+         </button>
+      </div>
 
-        {/* Image upload */}
-        <div>
-          <label className="block font-semibold text-gray-700 mb-2">
-            Upload New Images (Max 4)
-          </label>
-          <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit(formSubmit)} className="max-w-3xl w-full bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-12 space-y-8 border border-gray-50">
+        <header className="text-center space-y-2">
+          <div className="inline-flex bg-black text-white p-4 rounded-2xl mb-2">
+            <FaBoxOpen size={24} />
+          </div>
+          <h2 className="text-3xl font-black text-gray-900 tracking-tight">Edit Product</h2>
+          <p className="text-gray-400 font-medium text-sm">Modify your shopping catalog item</p>
+        </header>
+
+        {/* Media Grid */}
+        <div className="space-y-4">
+          <label className="text-[11px] font-black uppercase text-gray-400 tracking-widest ml-1">Media Assets</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map((index) => (
-              <div key={index}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageChange(e, index)}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
-                    file:rounded file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-green-50 file:text-green-700
-                    hover:file:bg-green-100"
-                />
-                {frontendImages[index] ? (
-                  <img
-                    src={frontendImages[index]}
-                    alt={`Preview ${index + 1}`}
-                    className="mt-2 w-full h-32 object-cover rounded-md"
-                  />
-                ) : oldImages[index] ? (
-                  <img
-                    src={oldImages[index]}
-                    alt={`Current ${index + 1}`}
-                    className="mt-2 w-full h-32 object-cover rounded-md opacity-70"
-                  />
+              <div key={index} className="relative aspect-square bg-[#f9f9f9] rounded-3xl border-2 border-dashed border-gray-200 overflow-hidden group hover:border-black transition-all">
+                <input type="file" onChange={(e) => handleImageChange(e, index)} className="absolute inset-0 opacity-0 z-10 cursor-pointer" />
+                {frontendImages[index] || oldImages[index] ? (
+                  <img src={frontendImages[index] || oldImages[index]} className="w-full h-full object-contain p-2" alt="product" />
                 ) : (
-                  <div className="mt-2 w-full h-32 bg-gray-200 rounded-md flex items-center justify-center text-gray-400">
-                    No Image
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                    <span className="text-xl font-light">+</span>
                   </div>
                 )}
               </div>
@@ -162,123 +140,58 @@ const EditItem = () => {
           </div>
         </div>
 
-        {/* Name */}
-        <div>
-          <label className="block text-gray-700 font-semibold mb-1">Name</label>
-          <input
-            type="text"
-            {...register("name", { required: "Name is required" })}
-            className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-              errors.name ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder="Enter item name"
-          />
-          {errors.name && (
-            <p className="text-red-600 text-sm mt-1">{errors.name.message}</p>
-          )}
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="block text-gray-700 font-semibold mb-1">
-            Description
-          </label>
-          <input
-            type="text"
-            {...register("description", {
-              required: "Description is required",
-            })}
-            className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-              errors.description ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder="Enter description"
-          />
-          {errors.description && (
-            <p className="text-red-600 text-sm mt-1">
-              {errors.description.message}
-            </p>
-          )}
-        </div>
-
-        {/* Prices */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">
-              Original Price (₹)
-            </label>
-            <input
-              type="number"
-              min="0"
-              {...register("originalPrice", {
-                required: "Original price is required",
-                min: { value: 0, message: "Price must be ≥ 0" },
-              })}
-              className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-                errors.originalPrice ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="₹0"
-            />
-            {errors.originalPrice && (
-              <p className="text-red-600 text-sm mt-1">
-                {errors.originalPrice.message}
-              </p>
-            )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+          <div className="col-span-2 space-y-2">
+            <label className="text-[11px] font-black uppercase text-gray-400 tracking-widest">Product Name</label>
+            <input {...register("name", { required: true })} className="w-full bg-gray-50 border-none rounded-2xl p-5 text-sm font-semibold outline-none focus:ring-2 focus:ring-black transition-all" />
           </div>
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">
-              Discount Price (₹)
-            </label>
-            <input
-              type="number"
-              min="0"
-              {...register("discountPrice", {
-                required: "Discount price is required",
-                min: { value: 0, message: "Price must be ≥ 0" },
-              })}
-              className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-                errors.discountPrice ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="₹0"
-            />
-            {errors.discountPrice && (
-              <p className="text-red-600 text-sm mt-1">
-                {errors.discountPrice.message}
-              </p>
-            )}
-          </div>
-        </div>
 
-        {/* Category */}
-        <div>
-          <label className="block text-gray-700 font-semibold mb-1">
-            Category
-          </label>
-          <select
-            {...register("category", { required: "Category is required" })}
-            className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-              errors.category ? "border-red-500" : "border-gray-300"
-            }`}
-          >
-            <option value="">Select category</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-          {errors.category && (
-            <p className="text-red-600 text-sm mt-1">
-              {errors.category.message}
-            </p>
+          <div className="space-y-2">
+             <label className="text-[11px] font-black uppercase text-gray-400 tracking-widest">MRP (₹)</label>
+             <input type="number" {...register("originalPrice", { required: true })} className="w-full bg-gray-50 border-none rounded-2xl p-5 text-sm font-semibold outline-none focus:ring-2 focus:ring-black" />
+          </div>
+          <div className="space-y-2">
+             <label className="text-[11px] font-black uppercase text-gray-400 tracking-widest">Sale Price (₹)</label>
+             <input type="number" {...register("discountPrice")} className="w-full bg-gray-50 border-none rounded-2xl p-5 text-sm font-semibold outline-none focus:ring-2 focus:ring-black" />
+          </div>
+
+          {/* New Inventory Section: Brand & Stock */}
+          <div className="space-y-2">
+             <label className="text-[11px] font-black uppercase text-gray-400 tracking-widest">Brand Name</label>
+             <input {...register("brand")} className="w-full bg-gray-50 border-none rounded-2xl p-5 text-sm font-semibold outline-none focus:ring-2 focus:ring-black" placeholder="e.g. Apple, Nike" />
+          </div>
+          <div className="space-y-2">
+             <label className="text-[11px] font-black uppercase text-orange-500 tracking-widest">Available Stock</label>
+             <input type="number" {...register("stock", { required: true })} className="w-full bg-orange-50/30 border-2 border-orange-100/50 rounded-2xl p-5 text-sm font-bold text-orange-700 outline-none focus:ring-2 focus:ring-orange-500 transition-all" placeholder="Quantity in hand" />
+          </div>
+
+          {/* Dynamic Sections Based on Category */}
+          {(selectedCategory === "Mobiles" || selectedCategory === "Electronics") && (
+              <div className="col-span-2 grid grid-cols-2 gap-4 p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100">
+                <input {...register("ram")} className="w-full bg-white border-none rounded-xl p-4 text-sm font-bold outline-none shadow-sm" placeholder="RAM (e.g. 8GB)" />
+                <input {...register("storage")} className="w-full bg-white border-none rounded-xl p-4 text-sm font-bold outline-none shadow-sm" placeholder="Storage (e.g. 256GB)" />
+              </div>
+          )}
+
+          {(selectedCategory === "Fashion" || selectedCategory === "Clothes" || selectedCategory === "Beauty") && (
+              <div className="col-span-2 grid grid-cols-2 gap-4 p-6 bg-purple-50/50 rounded-[2rem] border border-purple-100">
+                <input {...register("sizes")} className="w-full bg-white border-none rounded-xl p-4 text-sm font-bold outline-none shadow-sm" placeholder="Sizes (S, M, L)" />
+                <input {...register("colors")} className="w-full bg-white border-none rounded-xl p-4 text-sm font-bold outline-none shadow-sm" placeholder="Colors (Black, Blue)" />
+              </div>
           )}
         </div>
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className="w-full bg-green-600 hover:bg-green-700 transition-colors text-white font-semibold py-3 rounded-full flex items-center justify-center gap-3 shadow-md"
+        <div className="space-y-2">
+          <label className="text-[11px] font-black uppercase text-gray-400 tracking-widest">Description</label>
+          <textarea {...register("description")} className="w-full bg-gray-50 border-none rounded-2xl p-5 text-sm font-semibold outline-none h-40 focus:ring-2 focus:ring-black" />
+        </div>
+
+        <button 
+          type="submit" 
+          disabled={loading}
+          className={`w-full ${loading ? 'bg-gray-400' : 'bg-black'} text-white font-black py-6 rounded-3xl flex items-center justify-center gap-3 hover:shadow-2xl transition-all active:scale-[0.98] uppercase text-xs tracking-[0.2em]`}
         >
-          <FaSave className="text-lg" /> Save Changes
+          {loading ? "Updating..." : <><FaSave /> Update Item</>}
         </button>
       </form>
     </div>

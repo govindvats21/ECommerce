@@ -7,20 +7,20 @@ const ShopCard = ({ name, image, id }) => {
   return (
     <div
       onClick={() => navigate(`/shop/${id}`)}
-      className="min-w-[140px] sm:min-w-[160px] md:min-w-[180px] cursor-pointer rounded-2xl overflow-hidden shadow-md hover:shadow-xl bg-white transform transition duration-300 hover:-translate-y-1 hover:scale-105"
+      className="w-full sm:max-w-[250px] md:max-w-[200px] cursor-pointer rounded-lg bg-white shadow-md hover:shadow-lg transition duration-300 transform focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       {/* Shop Image */}
-      <div className="w-full h-30 sm:h-40 md:h-30 bg-gray-100 overflow-hidden">
+      <div className="w-full h-32 sm:h-40 md:h-32 bg-gray-200 overflow-hidden rounded-t-lg">
         <img
-          src={image || "https://via.placeholder.com/180x160"}
+          src={image || "https://via.placeholder.com/200x150"}
           alt={name}
-          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-300 "
         />
       </div>
 
       {/* Shop Name */}
-      <div className="bg-white px-3 py-2 text-center">
-        <span className="text-gray-800 font-semibold text-sm sm:text-base md:text-lg truncate block">
+      <div className="p-4 text-center">
+        <span className="text-gray-800 font-semibold text-sm sm:text-base md:text-sm block truncate">
           {name}
         </span>
       </div>

@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  FaStar,
-  FaRegStar,
-  FaMinus,
-  FaPlus,
-} from "react-icons/fa";
-import { FaShoppingCart } from "react-icons/fa";
+import { FaMinus, FaPlus, FaShoppingCart } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../redux/userSlice";
 import { useNavigate } from "react-router-dom";
@@ -16,35 +10,33 @@ const ItemCard = ({ data }) => {
   const [quantity, setQuantity] = useState(0);
   const [showStepper, setShowStepper] = useState(false);
 
+  const itemImage = data?.images && data?.images.length > 0 ? data.images[0] : "https://via.placeholder.com/150";
+
   const handleIncrease = () => {
     const newQty = quantity + 1;
     setQuantity(newQty);
-    dispatch(
-      addToCart({
+    dispatch(addToCart({
         id: data._id,
         name: data.name,
         shop: data.shop,
         price: data.discountPrice,
         quantity: newQty,
-        image: data?.images?.[0]?.image1,
-      })
-    );
+        image: itemImage,
+    }));
   };
 
   const handleDecrease = () => {
     if (quantity > 1) {
       const newQty = quantity - 1;
       setQuantity(newQty);
-      dispatch(
-        addToCart({
+      dispatch(addToCart({
           id: data._id,
           name: data.name,
           shop: data.shop,
           price: data.discountPrice,
           quantity: newQty,
-          image: data?.images?.[0]?.image1,
-        })
-      );
+          image: itemImage,
+      }));
     } else {
       setQuantity(0);
       setShowStepper(false);
@@ -52,109 +44,86 @@ const ItemCard = ({ data }) => {
   };
 
   const discountAmount = data?.originalPrice - data?.discountPrice;
-  const discountPercentage = data?.originalPrice
-    ? Math.round((discountAmount / data?.originalPrice) * 100)
-    : 0;
-
-  
+  const discountPercentage = data?.originalPrice ? Math.round((discountAmount / data?.originalPrice) * 100) : 0;
 
   return (
     <div
-      className="w-[180px] md:w-[200px] rounded-lg border border-gray-200 bg-white p-2 flex flex-col gap-1 cursor-pointer"
+      className="w-[180px] md:w-[210px] h-[300px] md:h-[300px] rounded-2xl border border-gray-100 bg-white p-3 flex flex-col justify-between cursor-pointer transition-all hover:shadow-xl hover:shadow-blue-50 relative group"
       onClick={(e) => {
         e.stopPropagation();
         navigate(`/single-item/${data._id}`);
       }}
     >
-      {/* Image */}
-      <div className="relative w-full h-24 md:h-32 flex items-center justify-center overflow-hidden rounded-md bg-white">
+      {/* 1. Image Section - Fixed Height */}
+      <div className="relative w-full h-32 md:h-40 flex items-center justify-center overflow-hidden rounded-xl bg-gray-50/50 mb-2">
         <img
-          src={data?.images?.[0]?.image1 || "https://via.placeholder.com/150"}
+          src={itemImage}
           alt={data?.name}
-          className="object-contain max-h-full"
+          className="object-contain max-h-[85%] w-full transition-transform duration-300 group-hover:scale-110"
         />
         {discountPercentage > 0 && (
-          <span className="absolute top-1 left-1 bg-red-500 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
+          <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] font-black py-1 px-2 rounded-lg shadow-sm">
             {discountPercentage}% OFF
           </span>
         )}
       </div>
 
-      {/* Title */}
-      <h1 className="text-[15px] font-medium text-gray-900 truncate">
-        {data?.name}
-      </h1>
-
-      {/* Category */}
-      {data?.category && (
-        <p className="text-[12px] text-gray-400 truncate">{data.category}</p>
-      )}
-
-    
-
-      {/* Price */}
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-900">
-            ₹{data?.discountPrice}
-          </span>
-          {discountPercentage > 0 && (
-            <span className="text-xs text-gray-400 line-through">
-              ₹{data?.originalPrice}
-            </span>
-          )}
-        </div>
-        {discountAmount > 0 && (
-          <span className="text-[11px] text-red-500 font-medium">
-            Save ₹{discountAmount}
-          </span>
+      {/* 2. Content Section - Using flex-grow to push footer down */}
+      <div className="flex flex-col flex-grow">
+        {/* Category */}
+        {data?.category && (
+          <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">{data.category}</p>
         )}
+        
+        {/* Title - Fixed to 2 lines height */}
+        <h1 className="text-[13px] md:text-[14px] font-bold text-gray-800 leading-tight line-clamp-2 h-[34px] md:h-[3px]">
+          {data?.name}
+        </h1>
+
+        {/* Price Section */}
+        <div className="">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-black text-gray-900">₹{data?.discountPrice}</span>
+            {discountPercentage > 0 && (
+              <span className="text-[11px] text-gray-400 line-through">₹{data?.originalPrice}</span>
+            )}
+          </div>
+          {discountAmount > 0 && (
+            <p className="text-[10px] text-green-600 font-bold">You Save ₹{discountAmount}</p>
+          )}
+          
+        </div>
       </div>
 
-      {/* Add/Quantity Controls */}
-      <div className="mt-1">
+      {/* 3. Footer / Buttons - Always stays at the bottom */}
+      <div className="mt-3">
         {showStepper ? (
-          <div className="flex items-center justify-between border border-gray-300 rounded-md h-8 overflow-hidden">
+          <div className="flex items-center justify-between border-2 border-green-500 rounded-xl h-9 overflow-hidden bg-white">
             <button
-              className="px-2 bg-gray-100 hover:bg-gray-200 text-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDecrease();
-              }}
+              className="px-3 h-full hover:bg-green-50 text-green-600 transition-colors"
+              onClick={(e) => { e.stopPropagation(); handleDecrease(); }}
             >
               <FaMinus size={10} />
             </button>
-            <span className="text-sm font-medium">{quantity}</span>
+            <span className="text-sm font-black text-gray-800">{quantity}</span>
             <button
-              className="px-2 bg-gray-100 hover:bg-gray-200 text-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleIncrease();
-              }}
+              className="px-3 h-full hover:bg-green-50 text-green-600 transition-colors"
+              onClick={(e) => { e.stopPropagation(); handleIncrease(); }}
             >
               <FaPlus size={10} />
             </button>
           </div>
         ) : (
           <button
-            className="w-full h-8 rounded-md border border-green-500 text-green-600 bg-green-50 hover:bg-green-100 text-sm font-semibold flex items-center justify-center"
+            className="w-full h-9 rounded-xl bg-gray-900 text-white hover:bg-blue-600 transition-all text-[11px] font-black flex items-center justify-center gap-2 uppercase tracking-widest"
             onClick={(e) => {
               e.stopPropagation();
               setShowStepper(true);
               setQuantity(1);
-              dispatch(
-                addToCart({
-                  id: data._id,
-                  name: data.name,
-                  shop: data.shop,
-                  price: data.discountPrice,
-                  quantity: 1,
-                  image: data?.images?.[0]?.image1,
-                })
-              );
+              handleIncrease();
             }}
           >
-            <FaShoppingCart size={12} className="mr-1" />
+            <FaShoppingCart size={12} />
             Add
           </button>
         )}

@@ -5,32 +5,35 @@ import { sendOtpMail } from "../utils/mail.js";
 
 export const signUp = async (req, res) => {
   try {
-    const { fullName, email, password, role, mobile } = req.body;
+    // 1. location ko bhi body se destructure karein
+    const { fullName, email, password, role, mobile, location } = req.body;
 
     if (!fullName || !email || !password || !role || !mobile) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
     const existingUser = await User.findOne({ email });
-
     if (existingUser) {
       return res.status(400).json({ message: "Email already exists" });
     }
 
     if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "Password must be at least 6 characters" });
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // 2. User create karte waqt location pass karein
     const user = await User.create({
       fullName,
       email,
       password: hashedPassword,
       role,
       mobile,
+      location: location || {
+        type: "Point",
+        coordinates: [77.1025, 28.7041] // Fallback agar frontend se na aaye
+      }
     });
 
     const token = genToken(user._id);
@@ -38,12 +41,13 @@ export const signUp = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
-      secure: true,
-      sameSite: "none",
+      secure: false, // Localhost pe false hi rakhein
+      sameSite: "Strict",
     });
 
     return res.status(200).json(user);
   } catch (error) {
+    console.error("CRITICAL BACKEND ERROR:", error);
     return res.status(500).json({ message: `Signup error: ${error.message}` });
   }
 };
@@ -64,11 +68,11 @@ export const signIn = async (req, res) => {
 
     const token = genToken(user._id);
 
-    res.cookie("token", token, {
-       httpOnly: true,
+      res.cookie("token", token, {
+      httpOnly: true,
       maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
-      secure: true,
-      sameSite: "none",
+      secure: false,
+      sameSite: "Strict",
     });
 
     const { password: _, ...userData } = user.toObject();
@@ -106,12 +110,11 @@ export const googleAuth = async (req, res) => {
     const token = genToken(user._id);
 
     res.cookie("token", token, {
-       httpOnly: true,
+      httpOnly: true,
       maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
-      secure: true,
-      sameSite: "none",
+      secure: false,
+      sameSite: "Strict",
     });
-
     return res.status(201).json(user);
   } catch (error) {
     return res.status(500).json({ message: `signupwithgoogle error ${error}` });

@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { FaLocationDot } from "react-icons/fa6";
+import { useNavigate, useLocation } from 'react-router-dom'
+import { FaLocationDot, FaPlus } from "react-icons/fa6";
 import { IoIosSearch } from "react-icons/io";
-import { FiShoppingCart } from "react-icons/fi";
-import { FaPlus } from "react-icons/fa";
+import { FiShoppingCart, FiUser } from "react-icons/fi";
 import { RxCross2 } from "react-icons/rx";
 import { TbReceipt2 } from "react-icons/tb";
 import { useDispatch, useSelector } from 'react-redux';
@@ -12,248 +11,164 @@ import axios from 'axios';
 import { serverURL } from '../App';
 
 const Nav = () => {
-const {userData,userCity,cartItems} = useSelector((state)=>state.user)
-
-    const navigate = useNavigate()
-    const dispatch = useDispatch()
+  const { userData, userCity, cartItems } = useSelector((state) => state.user)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const dispatch = useDispatch()
+  
   const [showInfo, setShowInfo] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [query, setQuery] = useState(false);
+  const [query, setQuery] = useState("");
 
+  // Ecommerce Only Theme (Blue)
+  const themeColor = "blue-600";
+  const themeBg = "bg-blue-600";
+  const themeText = "text-blue-600";
+  const themeBorder = "border-blue-200";
 
-const handleLogout = async () => {
+  const handleLogout = async () => {
     try {
       await axios.get(`${serverURL}/api/auth/signOut`, { withCredentials: true });
       dispatch(setUserData(null));
+      localStorage.removeItem("isLoggedIn");
+      setShowInfo(false);
+      navigate("/");
     } catch (error) {
       console.log(error);
     }
   };
-  
+
   const handleSearch = async () => {
     try {
       const res = await axios.get(
-        `${serverURL}/api/item/search-items?query=${query}&city=${userCity}`,
-        {
-          withCredentials: true,
-        })
-        console.log(res.data)
-        dispatch(setSearchItems(res.data))
+        `${serverURL}/api/item/search-items?query=${query}`,
+        { withCredentials: true }
+      )
+      dispatch(setSearchItems(res.data))
     } catch (error) {
-      console.log(error);
-      
+      console.log("Search error:", error);
     }
   }
 
-useEffect(()=>{
-  if(query){
-handleSearch()
-  } else{
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (query.trim().length > 0) {
+        handleSearch()
+      } else {
         dispatch(setSearchItems(null))
-
-  }
-},[query])
-
+      }
+    }, 300)
+    return () => clearTimeout(delayDebounceFn)
+  }, [query])
 
   return (
-       <div className="w-full fixed top-0 left-0 z-[9999] bg-white shadow-sm border-b border-gray-200">
+    <div className="w-full fixed top-0 left-0 z-[9999] bg-white shadow-sm border-b border-gray-100">
+      <div className="max-w-7xl mx-auto h-[75px] flex items-center justify-between px-4 md:px-8">
 
-<div className="max-w-7xl mx-auto h-[70px] flex items-center justify-between px-4 md:px-8">
+        {/* Logo Section */}
+        <div className="flex flex-col cursor-pointer" onClick={() => navigate("/")}>
+          <h1 className={`text-xl md:text-2xl font-black tracking-tighter ${themeText}`}>
+            Vats<span className="text-gray-800 font-bold">Store</span>
+          </h1>
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden md:block">
+            Ecommerce Mall
+          </span>
+        </div>
 
- {/* Logo */}
-        <h1
-          className="text-2xl font-bold text-green-700 cursor-pointer hover:text-green-800 transition"
-          onClick={() => navigate("/")}
-        >
-          Vingo
-        </h1>
-
- {/* Search Bar */}
-        {userData?.role === "user" && (
-          <>
-            {/* Mobile Search */}
-            {showSearch && (
-              <div className="md:hidden fixed top-[75px] left-[5%] w-[90%] h-[45px] bg-white shadow-md rounded-lg flex items-center z-[9999]">
-                <div className="flex items-center px-3 border-r border-gray-200 min-w-[120px]">
-                  <FaLocationDot className="text-green-600 mr-2" />
-                                    <span className="text-gray-600 truncate text-sm">{userCity}</span>
-
+        {/* Search Bar (Visible for Users and Guests) */}
+        {(!userData || userData?.role === "user") && (
+          <div className="hidden md:flex items-center flex-1 max-w-[500px] mx-8">
+            <div className={`flex items-center w-full bg-gray-50 border-2 border-transparent focus-within:border-${themeColor} focus-within:bg-white rounded-2xl h-[45px] transition-all px-4 gap-3`}>
+                <div className="flex items-center border-r pr-3 border-gray-200 min-w-[120px]">
+                    <FaLocationDot className={themeText} size={14} />
+                    <span className="text-gray-600 truncate text-xs font-bold ml-1">
+                        {userCity || "All India"}
+                    </span>
                 </div>
-                <div className="flex items-center w-full px-3 gap-2">
-                  <IoIosSearch className="text-green-600" size={18} />
-                  <input
+                <IoIosSearch className="text-gray-400" size={20} />
+                <input
                     type="text"
-                    placeholder="Search groceries..."
-                    className="w-full outline-none text-gray-700 placeholder:text-gray-400 text-sm"
-                      onChange={(e) => setQuery(e.target.value)} 
+                    placeholder="Search Products..."
+                    className="w-full outline-none bg-transparent text-gray-700 text-sm font-medium"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                />
+            </div>
+          </div>
+        )}
 
-                  />
+        {/* Right Actions */}
+        <div className="flex items-center gap-3 md:gap-6">
+          
+          {/* Cart & Shop Links (For Users/Guests) */}
+          {(!userData || userData?.role === "user") && (
+            <>
+              <nav className="hidden lg:flex items-center gap-6 mr-2">
+                 <button onClick={() => navigate("/home")} className="text-xs font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 transition">Home</button>
+                <button onClick={() => navigate("/all-products")} className="text-xs font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 transition">Shop All</button>
+              </nav>
+              <div className="relative cursor-pointer group" onClick={() => navigate("/cart")}>
+                <div className={`p-2 rounded-xl group-hover:bg-gray-50 transition-colors`}>
+                    <FiShoppingCart className={`w-6 h-6 ${themeText}`} />
                 </div>
+                {cartItems?.length > 0 && (
+                  <span className={`absolute -top-1 -right-1 text-[10px] font-black text-white ${themeBg} rounded-full w-5 h-5 flex items-center justify-center shadow-lg border-2 border-white`}>
+                    {cartItems.length}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Owner Actions */}
+          {userData?.role === "owner" && (
+            <div className="flex items-center gap-2">
+                <button className={`flex items-center gap-2 px-4 py-2 rounded-xl ${themeBg} text-white text-xs font-bold shadow-md hover:opacity-90 transition-all`} onClick={() => navigate("/add-item")}>
+                    <FaPlus size={14} /> <span className="hidden sm:block">Add Item</span>
+                </button>
+                <button className={`p-2 rounded-xl border-2 ${themeBorder} ${themeText}`} onClick={() => navigate("/my-orders")}>
+                    <TbReceipt2 size={20} />
+                </button>
+            </div>
+          )}
+
+          {/* User Profile / Login */}
+          <div className="relative">
+            {!userData ? (
+              <button 
+                onClick={() => navigate("/signin")}
+                className={`text-xs font-black uppercase tracking-widest ${themeBg} text-white px-5 py-2.5 rounded-xl shadow-lg hover:opacity-90 transition active:scale-95`}
+              >
+                Login
+              </button>
+            ) : (
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer shadow-sm border border-gray-100 bg-gray-50 hover:bg-white transition-all`}
+                onClick={() => setShowInfo(!showInfo)}
+              >
+                <span className={`font-black text-sm ${themeText}`}>{userData?.fullName?.[0]?.toUpperCase()}</span>
               </div>
             )}
 
-            {/* Desktop Search */}
-            <div className="hidden md:flex items-center bg-gray-50 border border-gray-200 rounded-lg h-[45px] w-full max-w-[500px] mx-4">
-              <div className="flex items-center px-3 border-r border-gray-200 min-w-[120px]">
-                <FaLocationDot className="text-green-600 mr-2" />
-                <span className="text-gray-600 truncate text-sm">{userCity}</span>
+            {showInfo && userData && (
+              <div className="absolute top-[55px] right-0 w-[200px] bg-white shadow-2xl rounded-2xl p-3 border border-gray-50 z-[10000] animate-in fade-in zoom-in duration-200">
+                <div className="px-3 py-2 mb-2">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Signed in as</p>
+                    <p className="text-sm font-bold text-gray-800 truncate">{userData?.fullName}</p>
+                </div>
+                <hr className="mb-2 border-gray-50" />
+                     <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors" onClick={() => {navigate("/home"); setShowInfo(false)}}>Home</button>
+                       <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors" onClick={() => {navigate("/all-products"); setShowInfo(false)}}>All Products</button>
+                <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors" onClick={() => {navigate("/my-orders"); setShowInfo(false)}}>My Orders</button>
+
+                <button className="w-full text-left px-3 py-2 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors mt-1" onClick={handleLogout}>Log Out</button>
               </div>
-              <div className="flex items-center w-full px-3 gap-2">
-                <IoIosSearch className="text-green-600" size={18} />
-                <input
-                  type="text"
-                  placeholder="Search groceries..."
-                  className="w-full outline-none bg-transparent text-gray-700 placeholder:text-gray-400 text-sm"
-                      onChange={(e) => setQuery(e.target.value)} 
-
-                />
-              </div>
-            </div>
-          </>
-        )}
-
-    <div className="flex items-center gap-4">
-          {userData?.role === "user" && (
-            <>
-              {/* Mobile Search Toggle */}
-              {showSearch ? (
-                <RxCross2
-                  size={22}
-                  className="text-green-600 md:hidden cursor-pointer"
-                  onClick={() => setShowSearch(false)}
-                />
-              ) : (
-                <IoIosSearch
-                  size={22}
-                  className="text-green-600 md:hidden cursor-pointer"
-                  onClick={() => setShowSearch(true)}
-                />
-              )}
-
-                 {/* Home */}
-              <button
-                className="hidden md:block text-green-700 bg-green-50 border border-green-200 rounded-md text-sm font-medium px-3 py-1 hover:bg-green-100 transition"
-                onClick={() => navigate("/")}
-              >
-                Home  
-                </button>
-
-                  {/* All items */}
-              <button
-                className="hidden md:block text-green-700 bg-green-50 border border-green-200 rounded-md text-sm font-medium px-3 py-1 hover:bg-green-100 transition"
-                onClick={() => navigate("/all-products")}
-              >
-                All Products
-              </button>
-
-                 {/* My Orders */}
-              <button
-                className="hidden md:block text-green-700 bg-green-50 border border-green-200 rounded-md text-sm font-medium px-3 py-1 hover:bg-green-100 transition"
-                onClick={() => navigate("/my-orders")}
-              >
-                My Orders
-              </button>
-
-              {/* Cart */}
-              <div
-                className="relative cursor-pointer"
-                onClick={() => navigate("/cart")}
-              >
-                <FiShoppingCart className="w-6 h-6 text-green-600" />
-                
-                  <span className="absolute -top-3 -right-2 text-xs font-bold text-white bg-green-600 rounded-full px-[5px] py-[1px] shadow">
-                    {cartItems?.length}
-                    
-                  </span>
-                
-              </div>
-
-           
-            </>
-          )}
-
-
- {userData?.role === "owner" && (
-            <>
-              <button
-                className="hidden md:flex items-center gap-2 p-2 ml-5 rounded-lg bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition text-sm"
-                onClick={() => navigate("/add-item")}
-              >
-                <FaPlus size={16} />
-                <span>Add Item</span>
-              </button>
-
-              <button
-                className="flex items-center gap-2 relative text-green-700 bg-green-50 border border-green-200 rounded-md text-sm font-medium px-3 py-1 hover:bg-green-100 transition"
-                onClick={() => navigate("/my-orders")}
-              >
-                <TbReceipt2 size={18} />
-                <span className="hidden md:block">My Orders</span>
-                <span className="absolute -right-2 -top-2 text-xs font-bold text-white bg-green-600 rounded-full px-[5px] py-[1px] shadow">
-                  0
-                </span>
-              </button>
-            </>
-          )}
-
-
- {/* Avatar */}
-          <div
-            className="bg-green-600 text-white rounded-full w-9 h-9 flex items-center justify-center font-semibold text-sm cursor-pointer shadow hover:bg-green-700 transition"
-            onClick={() => setShowInfo((prev) => !prev)}
-          >
-            {userData?.fullName?.[0]?.toUpperCase()}
-          </div>
-
-          {/* Dropdown */}
-          {showInfo && (
-            <div className="absolute top-[80px] right-4 md:right-[10%] lg:right-[15%] w-[200px] bg-white shadow-lg border border-gray-200 rounded-lg p-4 flex flex-col gap-3 z-[9999]">
-              <p className="text-sm font-semibold text-gray-800">
-                {userData?.fullName}
-              </p>
-
-              {userData?.role === "user" && (
-                <>
-  <button
-                  className="md:hidden text-green-700 font-medium hover:underline text-left cursor-pointer text-sm"
-                  onClick={() => navigate("/")}
-                >
-                  Home
-                </button>
-
-                <button
-                  className="md:hidden text-green-700 font-medium hover:underline text-left cursor-pointer text-sm"
-                  onClick={() => navigate("/my-orders")}
-                >
-                  My Orders
-                </button>
-
-
-              <button
-                className="md:hidden text-green-700 font-medium hover:underline text-left cursor-pointer text-sm"
-                onClick={() => navigate("/all-products")}
-              >
-                All Products
-              </button>
-              </>
-
-              )}
-
-
-              <button
-                className="text-green-700 font-medium hover:underline text-left cursor-pointer text-sm"
-                onClick={handleLogout}
-              >
-                Log Out
-              </button>
-            </div>
-          )}
-
+            )}
           </div>
         </div>
-
+      </div>
     </div>
   )
 }
 
-export default Nav
+export default Nav;

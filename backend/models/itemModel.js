@@ -1,8 +1,12 @@
 import mongoose from "mongoose";
-const ratingSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  rating: { type: Number, min: 1, max: 5 },
-}, { timestamps: true });
+
+const ratingSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    rating: { type: Number, min: 1, max: 5 },
+  },
+  { timestamps: true }
+);
 
 const itemSchema = new mongoose.Schema(
   {
@@ -15,61 +19,71 @@ const itemSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // E-commerce mein brand name filter ke liye zaruri hai
+    brand: {
+      type: String,
+      default: "Generic",
+    },
     discountPrice: {
       type: Number,
       required: true,
       min: 0,
     },
-
     originalPrice: {
       type: Number,
       required: true,
       min: 0,
     },
-
+    // Stock management: E-commerce items limited hote hain
+    stock: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     category: {
       type: String,
       required: true,
       enum: [
-  "Fruits",
-  "Vegetables",
-  "Dairy & Bakery",
-  "Snacks",
-  "Beverages",
-  "Personal Care",
-  "Household Essentials",
-  "Baby Care",
-  "Packaged Food",
-  "Health & Wellness",
-  "All",
-]
+    "Laptops",
+        "Speakers",
+        "Watches",
+        "Gaming",
+        "Fashion",
+        "Tablets",
+        "Cameras",
+        "Smart Home",
+        "Accessories",
+        "Clothes",
+        "Appliances",
+        "Furniture",
+        "Backpack",
+        "Smart LED TV",
+        "Covers",
+        "Footwear",
+      ],
     },
-    images: [
-      {
-        image1: { type: String, default: "" },
-        image2: { type: String, default: "" },
-        image3: { type: String, default: "" },
-        image4: { type: String, default: "" },
-      },
-    ],
+    // Images array ko simple [String] rakhna behtar rehta hai mapping ke liye
+    images: {
+      type: [String],
+      required: true,
+    },
     description: {
       type: String,
     },
+    attributes: {
+      colors: [String],
+      sizes: [String],
+      ram: [String],
+      storage: [String],
+    },
+    specifications: {
+      type: Map,
+      of: String
+    },
+  
   },
   { timestamps: true }
 );
 
-
-// ⭐ Average rating calculate karne ka method
-itemSchema.methods.calculateAverageRating = function () {
-  if (this.ratings.length === 0) {
-    this.averageRating = 0;
-  } else {
-    const sum = this.ratings.reduce((acc, r) => acc + r.rating, 0);
-    this.averageRating = sum / this.ratings.length;
-  }
-};
 const Item = mongoose.model("Item", itemSchema);
 export default Item;
-
-

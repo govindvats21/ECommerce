@@ -2,11 +2,9 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { serverURL } from "../App";
 import ReceiptDownloadButton from "./ReceiptDownloadButton";
-import { useState } from "react";
 
 const UserOrderCard = ({ data }) => {
   const navigate = useNavigate();
-  const [selectedRating, setSelectedRating] = useState({});
 
   const dateFormat = (dateString) => {
     const date = new Date(dateString);
@@ -61,7 +59,7 @@ const UserOrderCard = ({ data }) => {
                 />
               )}
               <span className="font-semibold text-gray-700">
-                {shopOrder.shop.name}
+                {shopOrder?.shop.name}
               </span>
             </div>
           )}

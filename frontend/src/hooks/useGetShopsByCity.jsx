@@ -1,30 +1,27 @@
 import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import axios from 'axios';
 import { serverURL } from '../App';
 import { setShopsInMyCity } from '../redux/userSlice';
 
 const useGetShopsByCity = () => {
   const dispatch = useDispatch();
-  const { userCity } = useSelector((state) => state.user)
-
 
   useEffect(() => {
     const fetchShops = async () => {
       try {
-        const result = await axios.get(`${serverURL}/api/shop/get-shops-by/${userCity}`, {
+        // City hata kar get-all-shops kar diya
+        const result = await axios.get(`${serverURL}/api/shop/get-all-shops`, {
           withCredentials: true,
         });
         dispatch(setShopsInMyCity(result.data));
-        // console.log(result.data);
-        
       } catch (error) {
-        console.log(error);
+        console.log("Fetch shops error:", error);
       }
     };
 
     fetchShops();
-  }, [userCity]);
+  }, [dispatch]); // Ab ye city badalne ka intezar nahi karega
 };
 
 export default useGetShopsByCity;

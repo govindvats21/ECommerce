@@ -12,7 +12,7 @@ export const createAndEditShop = async (req, res) => {
     let shop = await Shop.findOne({ owner });
 
     if (!shop) {
-      await Shop.create({
+      shop = await Shop.create({
         name,
         city,
         state,
@@ -21,7 +21,7 @@ export const createAndEditShop = async (req, res) => {
         image,
       });
     } else {
-      await Shop.findByIdAndUpdate(
+      shop = await Shop.findByIdAndUpdate(
         shop._id,
         {
           name,
@@ -29,13 +29,13 @@ export const createAndEditShop = async (req, res) => {
           state,
           address,
           owner,
-          image,
+          image: image || shop.image, // agar nayi image nahi hai toh purani rehne de
         },
         { new: true }
       );
     }
 
-    await shop.populate("owner items")
+    await shop.populate("owner items");
 
     return res.status(200).json(shop);
   } catch (error) {
@@ -50,7 +50,7 @@ export const getMyShop = async (req, res) => {
       select: "-password",
     });
     if (!shop) {
-      return null;
+      return res.status(404).json({ message: "Shop not found" });
     }
 
     return res.status(200).json(shop);
@@ -59,21 +59,14 @@ export const getMyShop = async (req, res) => {
   }
 };
 
-export const getShopsByCity = async (req, res) => {
+// --- LOCATION LOGIC REMOVED: Get All Shops instead of by city ---
+export const getAllShops = async (req, res) => {
   try {
-    const { city } = req.params;
-
-    if (!city) {
-      return res.status(400).json({ message: "City parameter is required" });
-    }
-
-    // Case-insensitive search
-
-    const shops = await Shop.find({
-      city: { $regex: new RegExp(`^${city}$`, "i") },
-    });
+    // Ab koi city parameter nahi chahiye, seedha saari shops find karein
+    const shops = await Shop.find({}).populate("items");
+    
     return res.status(200).json(shops);
   } catch (error) {
-    return res.status(500).json({ message: `get shop by city error ${error}` });
+    return res.status(500).json({ message: `get all shops error ${error}` });
   }
 };

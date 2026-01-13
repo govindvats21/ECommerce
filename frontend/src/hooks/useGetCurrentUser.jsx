@@ -2,23 +2,30 @@ import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
 import { setUserData } from '../redux/userSlice';
-import { serverURL } from '../App';
 
 const useGetCurrentUser = () => {
   const dispatch = useDispatch();
+  const API_URL = "http://localhost:8000";
 
   useEffect(() => {
     const fetchUser = async () => {
+      const isLoggedIn = localStorage.getItem("isLoggedIn");
+      if (!isLoggedIn) return; // Silent return for guest users
+
       try {
-        const result = await axios.get(`${serverURL}/api/user/current`, {
+        const res = await axios.get(`${API_URL}/api/user/current`, {
           withCredentials: true,
+          validateStatus: (status) => status < 500
         });
-        dispatch(setUserData(result.data));
+        if (res.status === 200) {
+          dispatch(setUserData(res.data));
+        } else {
+          localStorage.removeItem("isLoggedIn");
+        }
       } catch (error) {
-        console.log(error);
+        console.log("Session expired");
       }
     };
-
     fetchUser();
   }, [dispatch]);
 };

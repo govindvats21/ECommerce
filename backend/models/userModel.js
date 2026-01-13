@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
     },
-    mobileNumber: {
+    mobile: {
       type: String,
     },
     role: {
@@ -32,26 +32,28 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Location field ko optional rakha hai taaki purana data crash na ho
     location: {
       type: {
         type: String,
         enum: ["Point"],
         default: "Point",
       },
-      coordinates: { type: [Number], default: [0, 0] },
+      coordinates: { type: [Number], default: [] }, // Default empty array
     },
-    socketId:{
-      type:String
+    socketId: {
+      type: String
     },
-    isOnline:{
-      type:Boolean,
-      default:false
+    isOnline: {
+      type: Boolean,
+      default: false
     }
   },
   { timestamps: true }
 );
 
-// userSchema.index({ location: "2dsphere" });
+// Location index hatana zaroori hai agar hum geospatial queries use nahi kar rahe
+// userSchema.index({ location: "2dsphere" }); 
 
 const User = mongoose.model("User", userSchema);
 export default User;

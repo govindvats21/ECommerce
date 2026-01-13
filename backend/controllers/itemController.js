@@ -1,112 +1,117 @@
-
 import Item from "../models/itemModel.js";
 import Shop from "../models/shopModel.js";
-import Order from "../models/orderModel.js";
-
 import uploadOnCloudinary from "../utils/cloudnary.js";
 
+// --- 1. ADD ITEM ---
 export const addItem = async (req, res) => {
   try {
-    const { name, category, discountPrice,originalPrice,description } = req.body;
-    let images = {};
+    const { name, category, brand, discountPrice, originalPrice, stock, description, colors, sizes, ram, storage } = req.body;
+    
+    // Sabse important: images ko array [string] banana
+    let images = []; 
 
-    // multer se max 4 images aayengi (order important hoga)
     if (req.files && req.files.length > 0) {
       for (let i = 0; i < req.files.length; i++) {
         const uploadedUrl = await uploadOnCloudinary(req.files[i].path);
-        images[`image${i + 1}`] = uploadedUrl;
+        if (uploadedUrl) {
+          images.push(uploadedUrl); // Array mein direct URL push kar rahe hain
+        }
       }
-    } else {
-      console.warn("No image file sent");
     }
 
     const owner = req.userId;
     const shop = await Shop.findOne({ owner });
 
     if (!shop) {
-      console.error("Shop not found for user:", owner);
       return res.status(400).json({ message: "Shop not found" });
     }
 
+const toArray = (data) => data ? data.split(",").map(item => item.trim()) : [];
+    // Naye fields (brand, stock) ke saath item create karein
     const item = await Item.create({
       name,
       category,
-      discountPrice,
-      originalPrice,
+      brand: brand || "Generic",
+      discountPrice: Number(discountPrice) || 0,
+      originalPrice: Number(originalPrice) || 0,
+      stock: Number(stock) || 0,
       description,
-      images,
+      images, // [url1, url2, ...]
       shop: shop._id,
+      attributes:{
+        colors:toArray(colors),
+        sizes: toArray(sizes),
+        ram: toArray(ram),
+        storage: toArray(storage),
+       
+      }
     });
 
     shop.items.push(item._id);
-
     await shop.save();
-    // await shop.populate("owner")
+    
     await shop.populate({
       path: "items",
-      options: { createdAt: -1 },
+      options: { sort: { createdAt: -1 } },
     });
 
     return res.status(201).json(shop);
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Add item error", error: error.message });
+    console.error("Add Item Error:", error.message);
+    return res.status(500).json({ message: "Add item error", error: error.message });
   }
 };
 
-// Get Item
-
+// --- 2. GET ITEM BY ID ---
 export const getItemById = async (req, res) => {
   try {
     const { itemId } = req.params;
-
-    const item = await Item.findById(itemId);
-
-    if (!item) {
-      return res.status(400).json({ message: "item not found" });
-    }
-
+    const item = await Item.findById(itemId).populate("shop", "name image city");
+    if (!item) return res.status(400).json({ message: "item not found" });
     return res.status(200).json(item);
   } catch (error) {
-    return res.status(500).json({ message: `get item error ${error}` });
+    return res.status(500).json({ message: `get item error ${error.message}` });
   }
 };
 
-
-
-
-// Edit Item
-
+// --- 3. EDIT ITEM ---
 export const editItemById = async (req, res) => {
   try {
     const { itemId } = req.params;
-    const { name, category, discountPrice, originalPrice, description } = req.body;
+    const { name, category, brand, discountPrice, originalPrice, stock, description,colors, sizes, ram, storage, weight } = req.body;
 
     const item = await Item.findById(itemId);
     if (!item) return res.status(400).json({ message: "Item not found" });
 
-    // पुरानी images को copy कर लो
-    let images = item.images ? { ...item.images } : {};
+    // Purani images rakhein ya nayi upload karein
+    let images = item.images || []; 
 
-    // अगर नई images आई हैं तो replace करो
     if (req.files && req.files.length > 0) {
+      const newImages = [];
       for (let i = 0; i < req.files.length; i++) {
         const uploadedUrl = await uploadOnCloudinary(req.files[i].path);
-
-        // index से key बनाओ (image1, image2, image3, image4)
-        const key = `image${i + 1}`;
-        images[key] = uploadedUrl; 
+        if (uploadedUrl) newImages.push(uploadedUrl);
       }
+      images = newImages; // Nayi images se replace kar rahe hain
     }
 
-    // अब बाकी details update करो
-    item.name = name;
-    item.category = category;
-    item.discountPrice = discountPrice;
-    item.originalPrice = originalPrice;
-    item.description = description;
-    item.images = images; // पुरानी + नई दोनों images save होंगी
+    // Update fields
+    item.name = name || item.name;
+    item.category = category || item.category;
+    item.brand = brand || item.brand;
+    item.discountPrice = Number(discountPrice) || item.discountPrice;
+    item.originalPrice = Number(originalPrice) || item.originalPrice;
+    item.stock = stock !== undefined ? Number(stock) : item.stock;
+    item.description = description || item.description;
+    item.images = images;
+    // ✨ Attributes Update
+    if (item.attributes) {
+        if (colors) item.attributes.colors = toArray(colors);
+        if (sizes) item.attributes.sizes = toArray(sizes);
+        if (ram) item.attributes.ram = toArray(ram);
+        if (storage) item.attributes.storage = toArray(storage);
+
+    }
 
     await item.save();
 
@@ -119,123 +124,78 @@ export const editItemById = async (req, res) => {
 
     return res.status(200).json(shop);
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: `Edit item error: ${error.message}` });
+    return res.status(500).json({ message: `Edit item error: ${error.message}` });
   }
 };
 
-
-// delete item
-
+// --- 4. DELETE ITEM ---
 export const deleteItem = async (req, res) => {
   try {
     const { itemId } = req.params;
     const item = await Item.findByIdAndDelete(itemId);
-
-    if (!item) {
-      return res.status(400).json({ message: "item not found" });
-    }
+    if (!item) return res.status(400).json({ message: "item not found" });
 
     const shop = await Shop.findOne({ owner: req.userId });
+    if (shop) {
+      shop.items = shop.items.filter((i) => i.toString() !== itemId);
+      await shop.save();
+      await shop.populate({
+        path: "items",
+        options: { sort: { createdAt: -1 } },
+      });
+    }
 
-    shop.items = shop.items.filter((i) => i !== item._id);
-    await shop.save();
-
-    await shop.populate({
-      path: "items",
-      options: {
-        sort: { createdAt: -1 },
-      },
-    });
-
-    return res.status(201).json(shop);
+    return res.status(200).json(shop);
   } catch (error) {
-    return res.status(500).json({ message: `delete item error ${error}` });
+    return res.status(500).json({ message: `delete item error ${error.message}` });
   }
 };
 
-export const getItemBycity = async (req, res) => {
+// --- 5. GET ALL ITEMS ---
+export const getAllItems = async (req, res) => {
   try {
-    const { city } = req.params;
-
-    if (!city) {
-      return res.status(400).json({ message: "City parameter is required" });
-    }
-
-    // Case-insensitive search
-    const shops = await Shop.find({
-      city: { $regex: new RegExp(`^${city}$`, "i") },
-    }).populate("items");
-
-    const shopIds = shops.map((shop) => shop._id);
-
-    const items = await Item.find({
-      shop: { $in: shopIds },
-    });
-
+    const items = await Item.find({}).populate("shop", "name image city");
     return res.status(200).json(items);
   } catch (error) {
-    return res.status(500).json({ message: `get item by city error ${error}` });
+    return res.status(500).json({ message: `get items error ${error.message}` });
   }
 };
 
-
-
-
-
-
-
-
-
+// --- 6. SEARCH ITEMS ---
 export const searchItmes = async (req, res) => {
   try {
-    const { query, city } = req.query;
-    if (!query || !city) {
-      return null;
+    const { query } = req.query;
+    if (!query) {
+       const items = await Item.find({}).populate("shop", "name image");
+       return res.status(200).json(items);
     }
-
-    // Case-insensitive search
-    const shops = await Shop.find({
-      city: { $regex: new RegExp(`^${city}$`, "i") },
-    }).populate("items");
-
-    if (!shops) {
-      return res.status(404).json({ message: "shops not found" });
-    }
-    const shopIds = shops.map((shop) => shop._id);
 
     const items = await Item.find({
-      shop: { $in: shopIds },
       $or: [
         { name: { $regex: query, $options: "i" } },
         { category: { $regex: query, $options: "i" } },
+        { brand: { $regex: query, $options: "i" } },
       ],
-    }).populate("shop","name image")
+    }).populate("shop", "name image");
 
-    return res.status(200).json(items)
+    return res.status(200).json(items);
   } catch (error) {
-          res.status(500)
-      .json({ message: `search item error: ${error.message}` });
+    res.status(500).json({ message: `search item error: ${error.message}` });
   }
 };
 
-
-export const getItemsByShop = async (req,res) => {
+// --- 7. GET ITEMS BY SHOP ---
+export const getItemsByShop = async (req, res) => {
   try {
-    const {shopId} = req.params
-
-const shop = await Shop.findById(shopId).populate("items")
-if(!shop){
-      return res.status(400).json({ message: "shop not found" });
-
-}
-return res.status(200).json({
-  shop,items:shop.items
-})
-
-  } catch (error) {
-    return res.status(500).json({ message: `get item by shop error ${error}` });
+    const { shopId } = req.params;
+    const shop = await Shop.findById(shopId).populate("items");
+    if (!shop) return res.status(400).json({ message: "shop not found" });
     
+    return res.status(200).json({
+      shop,
+      items: shop.items,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: `get item by shop error ${error.message}` });
   }
-}
+};

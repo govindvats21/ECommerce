@@ -1,141 +1,104 @@
-import React, { useState } from "react";
-import { MdPhone } from "react-icons/md";
+import React from "react";
+import { MdPhone, MdLocationOn } from "react-icons/md";
 import { serverURL } from "../App";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { updateOrderStatus } from "../redux/userSlice";
 
 const OwnerOrderCard = ({ data }) => {
-  const [availableBoys, setAvailableBoys] = useState([]);
   const dispatch = useDispatch();
 
-  const handleUpdateStatus = async (orderId, shopId, status) => {
-    if (!status) return; // ignore if no status selected
+  const getImageUrl = (item) => {
+    // 1. Direct item images array check karein
+    // 2. Populated item object ki images check karein
+    const path = item?.images?.[0] || item?.item?.images?.[0];
 
+    if (!path) return "https://placehold.co/400x400?text=No+Path+In+DB";
+
+    // Agar full URL hai (Cloudinary/Firebase)
+    if (path.startsWith("http")) return path;
+    
+    // Local path formatting (Windows slashes fix)
+    const cleanPath = path.replace(/\\/g, "/");
+    return `${serverURL}/${cleanPath}`;
+  };
+
+  const handleUpdateStatus = async (orderId, shopId, status) => {
     try {
-      const res = await axios.post(
+      await axios.post(
         `${serverURL}/api/order/update-status/${orderId}/${shopId}`,
         { status },
         { withCredentials: true }
       );
       dispatch(updateOrderStatus({ orderId, shopId, status }));
-      setAvailableBoys(res.data.availableBoys);
+      alert("Status Updated!");
     } catch (error) {
-      console.error("Failed to update status:", error);
+      console.error("Status update error", error);
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300 max-w-3xl mx-auto">
-      {/* User Info */}
-      <div>
-        <h2 className="text-lg font-bold text-gray-900">{data?.user?.fullName || "User"}</h2>
-        <p className="text-sm text-gray-500">{data?.user?.email || "No email"}</p>
-        <p className="flex items-center gap-2 text-sm text-gray-700 mt-1">
-          <MdPhone className="text-[#ff4d2d]" aria-hidden="true" />
-          <span>{data?.user?.mobile || "No phone"}</span>
-        </p>
+    <div className="bg-white rounded-[2rem] shadow-xl p-6 mb-6 border border-gray-100 max-w-2xl mx-auto">
+      {/* Customer Info */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h2 className="text-xl font-black uppercase italic text-gray-800 tracking-tight">
+            {data?.user?.fullName}
+          </h2>
+          <div className="flex items-center gap-2 text-sm font-bold text-gray-400 mt-1">
+            <MdPhone className="text-[#ff4d2d]" /> {data?.user?.mobileNumber}
+          </div>
+        </div>
+        <div className="bg-orange-50 text-[#ff4d2d] px-3 py-1 rounded-xl text-[10px] font-black uppercase border border-orange-100">
+          {data?.shopOrders?.status}
+        </div>
       </div>
 
       {/* Address */}
-      <div className="flex flex-col gap-1 text-gray-600 text-sm bg-gray-50 p-3 rounded-lg">
-        <p>{data?.deliveryAddress?.text || "No delivery address provided"}</p>
-        <p className="text-xs text-gray-500">
-          Lat: {data?.deliveryAddress?.latitude ?? "N/A"}, {data?.deliveryAddress?.longitude ?? "N/A"}
+      <div className="bg-gray-50 p-3 rounded-2xl mb-4 border border-dashed border-gray-200">
+        <p className="text-[11px] font-bold text-gray-500 italic leading-snug flex gap-2">
+          <MdLocationOn className="text-[#ff4d2d] shrink-0" size={16} />
+          {data?.deliveryAddress?.text}
         </p>
       </div>
 
-      {/* Items */}
-      <div className="flex space-x-4 overflow-x-auto pb-2">
-        {data?.shopOrders?.shopOrderItems?.map((item, index) => {
-          const imgSrc = item?.item?.images?.image1 || "/default-item.png";
-          return (
-            <div
-              key={index}
-              className="w-36 shrink-0 rounded-lg bg-gray-50 hover:bg-gray-100 shadow p-2 transition-colors"
-              title={item?.name}
-            >
+      {/* Horizontal Images Scroll */}
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        {data?.shopOrders?.shopOrderItems?.map((item, index) => (
+          <div key={index} className="w-28 shrink-0">
+            <div className="h-28 w-28 rounded-2xl overflow-hidden bg-white border-2 border-gray-50 shadow-sm">
               <img
-                src={imgSrc}
-                alt={item?.name || "Order item"}
-                className="w-full h-24 object-cover rounded-md"
-                loading="lazy"
+                src={getImageUrl(item)}
+                alt={item.name}
+                className="w-full h-full object-cover"
+                onError={(e) => (e.target.src = "https://placehold.co/400x400?text=Broken+Link")}
               />
-              <p className="text-sm font-semibold mt-2 text-gray-800 truncate">{item?.name || "Item"}</p>
-              <p className="text-xs text-gray-500">
-                Qty: {item?.quantity || 1} × ₹{item?.price || 0}
-              </p>
             </div>
-          );
-        })}
+            <p className="text-[10px] font-black mt-2 truncate text-center uppercase tracking-tighter">
+              {item.name}
+            </p>
+            <p className="text-[9px] text-[#ff4d2d] font-bold text-center">Qty: {item.quantity}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Status + Change */}
-      <div className="flex justify-between items-center mt-auto pt-3 border-t border-gray-100">
-        <span className="text-sm">
-          Status:{" "}
-          <span className="font-semibold text-[#ff4d2d] capitalize">
-            {data?.shopOrders?.status || "unknown"}
-          </span>
-        </span>
+      {/* Bill & Actions */}
+      <div className="flex justify-between items-center pt-4 border-t border-gray-50">
+        <div>
+          <span className="text-[9px] font-black text-gray-300 uppercase block tracking-widest">Total Bill</span>
+          <span className="text-2xl font-black text-gray-900 tracking-tighter">₹{data?.shopOrders?.subTotal}</span>
+        </div>
+        
         <select
-          aria-label="Change order status"
-          className="rounded-md px-3 py-1 text-[#ff4d2d] text-sm border border-[#ff4d2d] focus:outline-none focus:ring-2 focus:ring-[#ff4d2d]/50"
-          onChange={(e) =>
-            handleUpdateStatus(data._id, data.shopOrders.shop._id, e.target.value)
-          }
-          defaultValue=""
+          className="bg-black text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none hover:bg-[#ff4d2d] transition-colors cursor-pointer"
+          onChange={(e) => handleUpdateStatus(data._id, data.shopOrders.shop?._id || data.shopOrders.shop, e.target.value)}
+          value={data?.shopOrders?.status}
         >
-          <option value="" disabled>
-            Change
-          </option>
           <option value="pending">Pending</option>
           <option value="preparing">Preparing</option>
           <option value="out of delivery">Out of delivery</option>
+          <option value="delivered">Delivered</option>
         </select>
-      </div>
-
-      {/* Delivery Boy Section */}
-      {data?.shopOrders?.status === "out of delivery" && (
-        <div className="mt-3 p-4 rounded-lg border text-sm bg-orange-50 space-y-2">
-          <p className="font-semibold text-gray-800 mb-1">
-            {data.shopOrders.assignedDeliveryBoy
-              ? "Assigned Delivery Boy"
-              : "Available Delivery Boys"}
-          </p>
-
-          {availableBoys?.length > 0 ? (
-            availableBoys.map((boy, idx) => (
-              <div
-                key={idx}
-                className="flex flex-col p-2 bg-white rounded-md shadow-sm border text-gray-700 hover:shadow-md transition"
-                tabIndex={0}
-              >
-                <span className="font-medium">{boy?.fullName || "Name not available"}</span>
-                <span className="text-xs text-gray-500">{boy?.email || "-"}</span>
-                <span className="text-xs text-gray-500">{boy?.mobileNumber || "-"}</span>
-              </div>
-            ))
-          ) : data.shopOrders.assignedDeliveryBoy ? (
-            <div
-              className="flex flex-col bg-white p-2 rounded-md shadow border"
-              tabIndex={0}
-            >
-              <span className="font-medium">
-                {data.shopOrders.assignedDeliveryBoy?.fullName || "Name not available"}
-              </span>
-              <span className="text-xs text-gray-500">{data.shopOrders.assignedDeliveryBoy?.email || "-"}</span>
-              <span className="text-xs text-gray-500">{data.shopOrders.assignedDeliveryBoy?.mobileNumber || "-"}</span>
-            </div>
-          ) : (
-            <div className="italic text-gray-500">Waiting for delivery boys...</div>
-          )}
-        </div>
-      )}
-
-      {/* Total */}
-      <div className="text-right font-bold text-gray-900 text-base">
-        Total: ₹{data?.shopOrders?.subTotal || 0}
       </div>
     </div>
   );

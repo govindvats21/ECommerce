@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaUtensils, FaPlus, FaSave } from "react-icons/fa";
+import { FaPlus, FaSave, FaBoxOpen } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useForm } from "react-hook-form";
@@ -7,17 +7,25 @@ import axios from "axios";
 import { serverURL } from "../App";
 import { setMyShopData } from "../redux/ownerSlice";
 
+// ✨ Updated: Only E-commerce Categories
 const categories = [
-  "Fruits",
-  "Vegetables",
-  "Dairy & Bakery",
-  "Snacks",
-  "Beverages",
-  "Personal Care",
-  "Household Essentials",
-  "Baby Care",
-  "Packaged Food",
-  "Health & Wellness",
+  "Mobiles",
+        "Laptops",
+        "Speakers",
+        "Watches",
+        "Gaming",
+        "Fashion",
+        "Tablets",
+        "Cameras",
+        "Smart Home",
+        "Accessories",
+        "Clothes",
+        "Appliances",
+        "Furniture",
+        "Backpack",
+        "Smart LED TV",
+        "Covers",
+        "Footwear",
 ];
 
 const AddItem = () => {
@@ -26,9 +34,11 @@ const AddItem = () => {
 
   const [frontendImages, setFrontendImages] = useState([null, null, null, null]);
   const [backendImages, setBackendImages] = useState([null, null, null, null]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, formState: { errors } } = useForm();
+  const selectedCategory = watch("category");
 
   const handleImageChange = (e, index) => {
     const file = e.target.files[0];
@@ -44,163 +54,190 @@ const AddItem = () => {
   };
 
   const formSubmit = async (details) => {
+    setLoading(true);
+    setError("");
     try {
       const formData = new FormData();
+      
       formData.append("name", details.name);
       formData.append("originalPrice", details.originalPrice);
       formData.append("discountPrice", details.discountPrice);
       formData.append("description", details.description);
       formData.append("category", details.category);
+      formData.append("brand", details.brand || "Generic");
+      formData.append("stock", details.stock);
 
-      for (let i = 0; i < 4; i++) {
-        if (backendImages[i]) {
-          formData.append("images", backendImages[i]);
+      // Attributes Logic
+      if (details.colors) formData.append("colors", details.colors);
+      if (details.sizes) formData.append("sizes", details.sizes);
+      if (details.ram) formData.append("ram", details.ram);
+      if (details.storage) formData.append("storage", details.storage);
+
+      let imagesSelected = false;
+      backendImages.forEach((file) => {
+        if (file) {
+          formData.append("images", file);
+          imagesSelected = true;
         }
+      });
+
+      if (!imagesSelected) {
+        setError("Please select at least one image.");
+        setLoading(false);
+        return;
       }
 
       const res = await axios.post(
         `${serverURL}/api/item/add-item`,
         formData,
-        { withCredentials: true }
+        { 
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" }
+        }
       );
 
       dispatch(setMyShopData(res.data));
-      navigate("/"); // After item is added, navigate to the shop page
+      navigate("/owner-dashboard"); 
     } catch (error) {
-      console.log("Error adding item:", error);
-      setError("Error adding item. Please try again.");
+      const msg = error.response?.data?.message || "Server error occurred.";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-green-50 p-8 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center">
       <form
         onSubmit={handleSubmit(formSubmit)}
-        className="max-w-xl w-full bg-white rounded-xl shadow-md p-8 space-y-6"
+        className="max-w-2xl w-full bg-white rounded-xl shadow-lg p-6 md:p-8 space-y-6 border border-gray-100"
       >
         {/* Header */}
         <div className="flex flex-col items-center">
-          <div className="bg-green-100 p-4 rounded-full mb-4">
-            <FaUtensils className="text-green-600 w-16 h-16" />
+          <div className="bg-blue-100 p-4 rounded-full mb-4">
+            <FaBoxOpen className="text-blue-600 w-10 h-10 md:w-12 md:h-12" />
           </div>
-          <h2 className="text-3xl font-extrabold text-gray-900">Add New Grocery Item</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Add Product</h2>
+          <p className="text-gray-500 text-center">List your shopping items here</p>
         </div>
 
-        {/* Image upload */}
-        <div>
-          <label className="block font-semibold text-gray-700 mb-2">Upload New Images (Max 4)</label>
-          <div className="grid grid-cols-2 gap-4">
+        {error && <p className="bg-red-50 text-red-600 p-3 rounded-lg border border-red-200 text-center text-sm font-medium">{error}</p>}
+
+        {/* Images Grid */}
+        <div className="space-y-2">
+          <label className="block font-bold text-gray-700 text-sm">Product Images (Max 4)</label>
+          <div className="grid grid-cols-4 gap-3">
             {[0, 1, 2, 3].map((index) => (
-              <div key={index}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageChange(e, index)}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
-                    file:rounded file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-green-50 file:text-green-700
-                    hover:file:bg-green-100"
-                />
+              <div key={index} className="relative aspect-square bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden hover:border-blue-400 transition-all cursor-pointer">
                 {frontendImages[index] ? (
-                  <img
-                    src={frontendImages[index]}
-                    alt={`Preview ${index + 1}`}
-                    className="mt-2 w-full h-32 object-cover rounded-md"
-                  />
+                  <img src={frontendImages[index]} alt="preview" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="mt-2 w-full h-32 bg-gray-200 rounded-md flex items-center justify-center text-gray-400">
-                    No Image
-                  </div>
+                  <FaPlus className="text-gray-300" />
                 )}
+                <input
+                  type="file" accept="image/*"
+                  onChange={(e) => handleImageChange(e, index)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Name */}
-        <div>
-          <label className="block text-gray-700 font-semibold mb-1">Name</label>
-          <input
-            type="text"
-            {...register("name", { required: "Name is required" })}
-            className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-              errors.name ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder="Enter item name"
-          />
-          {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name.message}</p>}
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="block text-gray-700 font-semibold mb-1">Description</label>
-          <input
-            type="text"
-            {...register("description", { required: "Description is required" })}
-            className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-              errors.description ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder="Enter description"
-          />
-          {errors.description && <p className="text-red-600 text-sm mt-1">{errors.description.message}</p>}
-        </div>
-
-        {/* Prices */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">Original Price (₹)</label>
+        {/* Name & Brand */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-gray-700 font-bold text-sm">Product Name</label>
             <input
-              type="number"
-              min="0"
-              {...register("originalPrice", { required: "Original price is required", min: { value: 0, message: "Price must be ≥ 0" } })}
-              className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-                errors.originalPrice ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="₹0"
+              type="text" {...register("name", { required: "Name is required" })}
+              className="w-full border rounded-lg p-3 outline-none focus:border-blue-500 bg-gray-50"
+              placeholder="e.g. iPhone 15 Pro"
             />
-            {errors.originalPrice && <p className="text-red-600 text-sm mt-1">{errors.originalPrice.message}</p>}
           </div>
-          <div>
-            <label className="block text-gray-700 font-semibold mb-1">Discount Price (₹)</label>
+          <div className="space-y-1">
+            <label className="text-gray-700 font-bold text-sm">Brand</label>
             <input
-              type="number"
-              min="0"
-              {...register("discountPrice", { required: "Discount price is required", min: { value: 0, message: "Price must be ≥ 0" } })}
-              className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-                errors.discountPrice ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="₹0"
+              type="text" {...register("brand")}
+              className="w-full border rounded-lg p-3 outline-none focus:border-blue-500 bg-gray-50"
+              placeholder="e.g. Apple"
             />
-            {errors.discountPrice && <p className="text-red-600 text-sm mt-1">{errors.discountPrice.message}</p>}
+          </div>
+        </div>
+
+        {/* Prices & Stock */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <label className="text-gray-700 font-bold text-sm">MRP (₹)</label>
+            <input type="number" {...register("originalPrice", { required: true })} className="w-full border rounded-lg p-3 outline-none bg-gray-50" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-gray-700 font-bold text-sm">Sale (₹)</label>
+            <input type="number" {...register("discountPrice", { required: true })} className="w-full border rounded-lg p-3 outline-none bg-gray-50" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-gray-700 font-bold text-sm">Stock</label>
+            <input type="number" {...register("stock", { required: true })} className="w-full border rounded-lg p-3 outline-none bg-gray-50" />
           </div>
         </div>
 
         {/* Category */}
-        <div>
-          <label className="block text-gray-700 font-semibold mb-1">Category</label>
+        <div className="space-y-1">
+          <label className="text-gray-700 font-bold text-sm">Category</label>
           <select
             {...register("category", { required: "Category is required" })}
-            className={`w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${
-              errors.category ? "border-red-500" : "border-gray-300"
-            }`}
+            className="w-full border rounded-lg p-3 outline-none bg-gray-50 font-medium"
           >
-            <option value="">Select category</option>
+            <option value="">Select Category</option>
             {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
+              <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
-          {errors.category && <p className="text-red-600 text-sm mt-1">{errors.category.message}</p>}
         </div>
 
-        {/* Submit Button */}
+        {/* ✨ Dynamic Attributes (Only for E-commerce) */}
+        <div className="space-y-4">
+          {(selectedCategory === "Mobiles" || selectedCategory === "Laptops" || selectedCategory === "Tablets") && (
+            <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <div>
+                <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">RAM (8GB, 12GB)</label>
+                <input {...register("ram")} className="w-full border rounded-lg p-2 text-sm outline-none" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">Storage (128GB, 256GB)</label>
+                <input {...register("storage")} className="w-full border rounded-lg p-2 text-sm outline-none" />
+              </div>
+            </div>
+          )}
+
+          {["Fashion", "Clothes", "Beauty"].includes(selectedCategory) && (
+            <div className="grid grid-cols-2 gap-4 p-4 bg-purple-50 rounded-xl border border-purple-100">
+              <div>
+                <label className="block text-[10px] font-bold text-purple-700 uppercase mb-1">Sizes (S, M, L, XL)</label>
+                <input {...register("sizes")} className="w-full border rounded-lg p-2 text-sm outline-none" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-purple-700 uppercase mb-1">Colors (Red, Black, White)</label>
+                <input {...register("colors")} className="w-full border rounded-lg p-2 text-sm outline-none" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Description */}
+        <div className="space-y-1">
+          <label className="text-gray-700 font-bold text-sm">Description</label>
+          <textarea
+            {...register("description", { required: "Description is required" })}
+            className="w-full border rounded-lg p-3 outline-none h-24 focus:border-blue-500 bg-gray-50"
+            placeholder="Product details..."
+          />
+        </div>
+
         <button
-          type="submit"
-          className="w-full bg-green-600 hover:bg-green-700 transition-colors text-white font-semibold py-3 rounded-full flex items-center justify-center gap-3 shadow-md"
+          type="submit" disabled={loading}
+          className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition duration-200 shadow-lg active:scale-95 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
         >
-          <FaSave className="text-lg" /> Add Item
+          {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><FaSave /> Save Product</>}
         </button>
       </form>
     </div>

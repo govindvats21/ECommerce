@@ -4,22 +4,26 @@ const userSlice = createSlice({
   name: "user",
   initialState: {
     userData: null,
-    userCity: null,
-    userState: null,
-    userAddress: null,
-    shopsInMyCity: null,
-    itemsInMyCity: null,
+    userCity: "All India",
+    userState: "",
+    userAddress: "",
+    shopsInMyCity: [], 
+    itemsInMyCity: [], 
+    allItems: [], // ✨ Naya state: Saare items ke liye
     cartItems: [],
     outOfStockItems: {},
     totalAmount: 0,
     myOrders: [],
     searchItems: [],
-    socket: null,
   },
 
   reducers: {
     setUserData: (state, action) => {
       state.userData = action.payload;
+    },
+    // ✨ Naya reducer: Jo backend se aane wale saare items save karega
+    setAllItems: (state, action) => {
+      state.allItems = action.payload;
     },
     setUserCity: (state, action) => {
       state.userCity = action.payload;
@@ -37,10 +41,9 @@ const userSlice = createSlice({
       state.itemsInMyCity = action.payload;
     },
     setItemsOutOfStock: (state, action) => {
-  const { itemId, outOfStock } = action.payload;
-  state.outOfStockItems[itemId] = outOfStock;
-},
-
+      const { itemId, outOfStock } = action.payload;
+      state.outOfStockItems[itemId] = outOfStock;
+    },
     addToCart: (state, action) => {
       const item = action.payload;
       if (!Array.isArray(state.cartItems)) state.cartItems = [];
@@ -72,60 +75,48 @@ const userSlice = createSlice({
       );
     },
     setMyOrders: (state, action) => {
-      state.myOrders = action.payload || [];
+      state.myOrders = action.payload;
     },
     addMyOrders: (state, action) => {
-      state.myOrders = [...(state.myOrders || []), ...action.payload];
+      state.myOrders = action.payload;
     },
-
-    // 🔹 Corrected reducer for manual status update
-  updateOrderStatus: (state, action) => {
-  const { orderId, shopId, status } = action.payload;
-
-  const order = state.myOrders.find((o) => o._id == orderId);
-  if (order && order.shopOrders) {
-    // agar ek hi shopOrder hai (object form)
-    if (!Array.isArray(order.shopOrders)) {
-      if (order.shopOrders.shop._id == shopId) {
-        order.shopOrders.status = status;
+    updateOrderStatus: (state, action) => {
+      const { orderId, shopId, status } = action.payload;
+      const order = state.myOrders.find((o) => o._id == orderId);
+      if (order && order.shopOrders) {
+        if (!Array.isArray(order.shopOrders)) {
+          if (order.shopOrders.shop._id == shopId) {
+            order.shopOrders.status = status;
+          }
+        } else {
+          const shopOrder = order.shopOrders.find(
+            (so) => so.shop._id == shopId
+          );
+          if (shopOrder) shopOrder.status = status;
+        }
       }
-    } 
-    // agar multiple shopOrders array form me ho
-    else {
-      const shopOrder = order.shopOrders.find(
-        (so) => so.shop._id == shopId
-      );
-      if (shopOrder) {
-        shopOrder.status = status;
-      }
-    }
-  }
-},
-
-
-    // 🔹 Corrected reducer for socket updates
+    },
     updateRealtimeOrderStatus: (state, action) => {
       const { orderId, shopId, status } = action.payload;
       if (!state.myOrders) return;
       const order = state.myOrders.find(o => o._id == orderId);
       if (!order || !order.shopOrders) return;
-
       const shopOrder = order.shopOrders.find(so => so.shop._id == shopId);
       if (shopOrder) shopOrder.status = status;
-    },
-
-    setSocket: (state, action) => {
-      state.socket = action.payload;
     },
     setSearchItems: (state, action) => {
       state.searchItems = action.payload;
     },
-    
+    setSocket: (state, action) => {
+      // socket logic
+    },
   },
 });
 
+// ✨ Yahan 'setAllItems' export list mein add kar diya gaya hai
 export const {
   setUserData,
+  setAllItems, // 👈 Exported
   setUserCity,
   setUserState,
   setUserAddress,

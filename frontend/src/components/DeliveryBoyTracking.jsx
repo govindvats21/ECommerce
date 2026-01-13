@@ -1,56 +1,76 @@
-import React from 'react'
-
+import React, { useEffect } from 'react';
 import home from "../assets/home.png";
 import scooter from "../assets/scooter.png";
 import "leaflet/dist/leaflet.css";
-import L from 'leaflet'
-import { MapContainer, Marker, Polyline, TileLayer } from 'react-leaflet';
+import L from 'leaflet';
+import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet';
 
 const deliveryBoyIcon = new L.Icon({
-    iconUrl:scooter,
-    iconSize:[40,40],
-    iconAnchor:[20,20]
-})
+    iconUrl: scooter,
+    iconSize: [45, 45],
+    iconAnchor: [22, 45]
+});
+
 const customerIcon = new L.Icon({
-    iconUrl:home,
-    iconSize:[40,40],
-    iconAnchor:[20,20]
-})
+    iconUrl: home,
+    iconSize: [45, 45],
+    iconAnchor: [22, 45]
+});
 
-
-const DeliveryBoyTracking = ({data}) => {
-
-const deliveryBoyLat = data.deliveryBoyLocation.lat
-const deliveryBoyLon = data.deliveryBoyLocation.lon
-const customerLat =  data.customerLocation.lat
-const customerLon =  data.customerLocation.lon
-
-const path = [
-    [deliveryBoyLat, deliveryBoyLon],
-    [customerLat,customerLon]
-]
-
-const center = [deliveryBoyLat,deliveryBoyLon]
-
-  return (
-  <div className='w-full h-[400px] mt-3 rounded-xl overflow-hidden shadow-md'>
-        <MapContainer className='w-full h-full' center={center} zoom={17}>  
-
-
-                        <TileLayer
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-            
-<Marker position={[deliveryBoyLat,deliveryBoyLon]} icon={deliveryBoyIcon} />
-<Marker position={[customerLat,customerLon]} icon={customerIcon} />
-
-<Polyline positions={path} color='blue' weigth={4}/>
-
-        </MapContainer>
-
-    </div>
-  )
+function RecenterMap({ center }) {
+    const map = useMap();
+    useEffect(() => {
+        if (center[0] && center[1]) {
+            map.setView(center, map.getZoom());
+        }
+    }, [center, map]);
+    return null;
 }
 
-export default DeliveryBoyTracking
+const DeliveryBoyTracking = ({ data }) => {
+    // Console log to debug if map doesn't show
+    console.log("Map Props Received:", data);
+
+    const boyLat = data?.deliveryBoyLocation?.lat;
+    const boyLon = data?.deliveryBoyLocation?.lon;
+    const custLat = data?.customerLocation?.lat;
+    const custLon = data?.customerLocation?.lon;
+
+    // Validation: Agar coords nahi hain toh map mat dikhao
+    if (!boyLat || !custLat) {
+        return (
+            <div className="h-[300px] w-full flex items-center justify-center bg-gray-100 rounded-xl border-2 border-dashed">
+                <p className="text-gray-400 font-bold">FETCHING LIVE LOCATION...</p>
+            </div>
+        );
+    }
+
+    const deliveryBoyPos = [boyLat, boyLon];
+    const customerPos = [custLat, custLon];
+    const path = [deliveryBoyPos, customerPos];
+
+    return (
+        <div className='w-full h-[350px] mt-3 rounded-2xl overflow-hidden shadow-inner border-2 border-orange-500 relative z-0'>
+            <MapContainer 
+                className='w-full h-full' 
+                center={deliveryBoyPos} 
+                zoom={15} 
+                scrollWheelZoom={true}
+            >
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; OpenStreetMap'
+                />
+
+                <RecenterMap center={deliveryBoyPos} />
+
+                <Marker position={deliveryBoyPos} icon={deliveryBoyIcon} />
+                <Marker position={customerPos} icon={customerIcon} />
+
+                <Polyline positions={path} color='#f97316' weight={5} dashArray="10, 15" opacity={0.7} />
+            </MapContainer>
+        </div>
+    );
+};
+
+export default DeliveryBoyTracking;

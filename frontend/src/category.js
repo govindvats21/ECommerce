@@ -1,194 +1,247 @@
-import image1 from "./assets/image1.jpg";
-import image2 from "./assets/image2.jpg";
-import image3 from "./assets/image3.webp";
-import image4 from "./assets/image4.webp";
-import image5 from "./assets/image5.webp";
-import image6 from "./assets/image6.webp";
-import image7 from "./assets/image7.webp";
-import image8 from "./assets/image8.webp";
-import image9 from "./assets/image9.webp";
-import image10 from "./assets/image10.webp";
+import {
+  FiTruck,
+  FiUserCheck,
+  FiShield,
+  FiSmartphone,
+  FiMonitor,
+  FiWatch,
+  FiCamera,
+  FiSpeaker,
+  FiActivity,
+  FiLayers,
+  FiMapPin,
+  FiPackage,
+  FiSun,
+} from "react-icons/fi";
+import {
+  TbLeaf,
+  TbReplaceFilled,
+  TbHeartHandshake,
+  TbSmartHome,
+  TbDeviceGamepad2,
+  TbDeviceLaptop,
+  TbHeadphones,
+  TbHanger,
+  TbShoe,
+  TbArmchair,
+  TbWallet,
+  TbDeviceTvOld,
+  TbAerialLift,
+} from "react-icons/tb";
+import {
+  RiShieldCheckLine,
+  RiHome2Line,
+  RiTShirtLine,
+  RiHardDriveLine,
+} from "react-icons/ri";
 
-import { FiTruck, FiUserCheck, FiCoffee, FiShield } from "react-icons/fi";
-import { TbLeaf, TbReplaceFilled, TbHeartHandshake } from "react-icons/tb";
-import { RiLeafFill, RiShieldCheckLine, RiHome2Line } from "react-icons/ri";
-import { GiBabyBottle, GiFruitBowl, GiHealthNormal } from "react-icons/gi";
+// Aapki Images
+import image1 from "./assets/categories/image1.jpg";
+import image2 from "./assets/categories/image2.webp";
+import image3 from "./assets/categories/image3.jpg";
+import image4 from "./assets/categories/image4.webp";
+import image5 from "./assets/categories/image5.webp";
+import image6 from "./assets/categories/image6.webp";
+import image7 from "./assets/categories/image7.webp";
+import image8 from "./assets/categories/image8.webp";
+import image9 from "./assets/categories/image9.webp";
+import image10 from "./assets/categories/image10.webp";
+import image11 from "./assets/categories/image11.webp";
+import image12 from "./assets/categories/image12.webp";
+import image13 from "./assets/categories/image13.webp";
+import image14 from "./assets/categories/image14.webp";
+import image15 from "./assets/categories/image15.jpeg";
+import image16 from "./assets/categories/image16.webp";
+import image17 from "./assets/categories/image17.webp";
+
 
 export const categories = [
   {
-    category: "Fruits",
+    category: "Mobiles",
     image: image1,
-    highlights: [
-      "Fresh from farm",
-      "Seasonal picks",
-      "High in vitamins",
-      "Quality assured",
-    ],
+    type: "ecommerce",
     icons: [
-      { icon: GiFruitBowl, label: "Fresh & Natural" },
-      { icon: TbLeaf, label: "Organic" },
-      { icon: FiUserCheck, label: "Quality Assured" },
-      { icon: RiShieldCheckLine, label: "Warranty" },
+      { icon: FiSmartphone, label: "5G Tech" },
+      { icon: FiShield, label: "Secure" },
+      { icon: FiTruck, label: "Free Shipping" },
+      { icon: TbReplaceFilled, label: "Easy Return" },
     ],
   },
   {
-    category: "Vegetables",
+    category: "Laptops",
     image: image2,
-    highlights: [
-      "Farm fresh",
-      "Locally sourced",
-      "Naturally grown",
-      "Organic options",
-    ],
+    type: "ecommerce",
     icons: [
-      { icon: TbLeaf, label: "Fresh & Organic" },
-      { icon: RiLeafFill, label: "Locally Grown" },
-      { icon: FiUserCheck, label: "Quality Assured" },
-      { icon: RiShieldCheckLine, label: "Warranty" },
+      { icon: TbDeviceLaptop, label: "High Power" },
+      { icon: FiShield, label: "Warranty" },
+      { icon: FiUserCheck, label: "Verified" },
+      { icon: TbReplaceFilled, label: "Upgrade" },
     ],
   },
   {
-    category: "Dairy & Bakery",
+    category: "Clothes",
     image: image3,
-    highlights: [
-      "Daily essentials",
-      "Freshly baked",
-      "Trusted brands",
-      "Hygienic packaging",
-    ],
+    type: "ecommerce",
     icons: [
-      { icon: FiCoffee, label: "Freshly Baked" },
-      { icon: TbReplaceFilled, label: "Easy Replacement" },
-      { icon: FiUserCheck, label: "Trusted Quality" },
-      { icon: FiShield, label: "Safe & Hygienic" },
+      { icon: RiTShirtLine, label: "Premium Fabric" }, // Fixed: Headphones ki jagah T-Shirt
+      { icon: FiShield, label: "Quality Check" },
+      { icon: FiTruck, label: "Fast Delivery" },
+      { icon: TbReplaceFilled, label: "7 Day Return" },
     ],
   },
   {
-    category: "Snacks",
+    category: "Watches",
     image: image4,
-    highlights: [
-      "Tasty & crispy",
-      "Top brands",
-      "Instant munchies",
-      "Variety of flavors",
-    ],
+    type: "ecommerce",
     icons: [
-      { icon: TbReplaceFilled, label: "Easy Replacement" },
-      { icon: FiUserCheck, label: "Trusted Quality" },
-      { icon: FiTruck, label: "Fast Delivery" },
-      { icon: RiHome2Line, label: "Home Delivery" },
+      { icon: FiWatch, label: "Luxury" },
+      { icon: RiShieldCheckLine, label: "Warranty" },
+      { icon: FiUserCheck, label: "Authentic" },
+      { icon: TbReplaceFilled, label: "Exchange" },
     ],
   },
   {
-    category: "Beverages",
+    category: "Gaming",
     image: image5,
-    highlights: [
-      "Cool & refreshing",
-      "Health drinks available",
-      "Party ready",
-      "Wide selection",
-    ],
+    type: "ecommerce",
     icons: [
-      { icon: FiCoffee, label: "Refreshing Drinks" },
-      { icon: TbHeartHandshake, label: "Trusted Brands" },
-      { icon: FiUserCheck, label: "Quality Assured" },
-      { icon: FiTruck, label: "Fast Delivery" },
+      { icon: TbDeviceGamepad2, label: "Original" },
+      { icon: FiMonitor, label: "4K Ready" },
+      { icon: FiShield, label: "Safe Pay" },
+      { icon: TbReplaceFilled, label: "Warranty" },
     ],
   },
   {
-    category: "Personal Care",
+    category: "Fashion",
     image: image6,
-    highlights: [
-      "Gentle & effective",
-      "Daily grooming",
-      "Trusted brands",
-      "Skin-friendly",
-    ],
+    type: "ecommerce",
     icons: [
-      { icon: TbHeartHandshake, label: "Trusted Brands" },
-      { icon: FiUserCheck, label: "Quality Assured" },
-      { icon: FiShield, label: "Skin Safe" },
-      { icon: RiShieldCheckLine, label: "Warranty" },
+      { icon: TbHanger, label: "Trend Alert" },
+      { icon: FiUserCheck, label: "Designer" },
+      { icon: TbReplaceFilled, label: "Easy Exchange" },
+      { icon: FiTruck, label: "Express" },
     ],
   },
   {
-    category: "Household Essentials",
+    category: "Footwear",
     image: image7,
-    highlights: [
-      "Daily use products",
-      "Cleaning & hygiene",
-      "Budget-friendly",
-      "Eco-friendly options",
-    ],
+    type: "ecommerce",
     icons: [
-      { icon: RiHome2Line, label: "Home Essentials" },
-      { icon: TbReplaceFilled, label: "Easy Replacement" },
-      { icon: FiUserCheck, label: "Quality Assured" },
-      { icon: TbHeartHandshake, label: "Eco-Friendly" },
+      { icon: TbShoe, label: "Comfort Fit" },
+      { icon: FiShield, label: "Durable" },
+      { icon: FiUserCheck, label: "Original" },
+      { icon: TbReplaceFilled, label: "Size Swap" },
     ],
   },
   {
-    category: "Baby Care",
+    category: "Tablets",
     image: image8,
-    highlights: [
-      "Gentle for babies",
-      "Doctor recommended",
-      "Top brands",
-      "Safe & tested",
-    ],
+    type: "ecommerce",
     icons: [
-      { icon: GiBabyBottle, label: "Baby Safe" },
-      { icon: TbHeartHandshake, label: "Trusted Brands" },
-      { icon: FiUserCheck, label: "Quality Assured" },
-      { icon: RiShieldCheckLine, label: "Warranty" },
+      { icon: FiLayers, label: "Multitask" },
+      { icon: FiMonitor, label: "Vivid Display" },
+      { icon: FiShield, label: "Brand Warranty" },
+      { icon: TbReplaceFilled, label: "Trade-In" },
     ],
   },
   {
-    category: "Packaged Food",
+    category: "Cameras",
     image: image9,
-    highlights: [
-      "Ready-to-eat",
-      "Tasty & convenient",
-      "Safe packaging",
-      "Long shelf life",
-    ],
+    type: "ecommerce",
     icons: [
-      { icon: FiUserCheck, label: "Quality Assured" },
-      { icon: TbReplaceFilled, label: "Easy Replacement" },
-      { icon: FiTruck, label: "Fast Delivery" },
-      { icon: RiShieldCheckLine, label: "Warranty" },
+      { icon: FiCamera, label: "DSLR Tech" },
+      { icon: FiShield, label: "Safe Transit" },
+      { icon: FiTruck, label: "Insured" },
+      { icon: FiUserCheck, label: "Pro Grade" },
     ],
   },
   {
-    category: "Health & Wellness",
+    category: "Smart Home",
     image: image10,
-    highlights: [
-      "Nutrient-rich",
-      "Immunity boosters",
-      "Ayurvedic & herbal",
-      "Certified products",
-    ],
+    type: "ecommerce",
     icons: [
-      { icon: GiHealthNormal, label: "Healthy Choices" },
-      { icon: TbHeartHandshake, label: "Trusted Brands" },
-      { icon: FiUserCheck, label: "Quality Assured" },
-      { icon: RiShieldCheckLine, label: "Warranty" },
+      { icon: TbSmartHome, label: "Automation" },
+      { icon: FiSmartphone, label: "App Link" },
+      { icon: RiShieldCheckLine, label: "Secure" },
+      { icon: FiTruck, label: "Free Setup" },
     ],
   },
   {
-    category: "All",
-    image: image1,
-    highlights: [
-      "All categories",
-      "Handpicked products",
-      "100% Genuine",
-      "Best value",
-    ],
+    category: "Accessories",
+    image: image11,
+    type: "ecommerce",
     icons: [
-      { icon: FiTruck, label: "Fast Delivery" },
-      { icon: FiUserCheck, label: "Quality Assured" },
-      { icon: RiHome2Line, label: "Home Delivery" },
-      { icon: TbHeartHandshake, label: "Trusted Brands" },
+      { icon: TbWallet, label: "Premium" },
+      { icon: FiUserCheck, label: "Stylish" },
+      { icon: FiShield, label: "Tested" },
+      { icon: TbReplaceFilled, label: "Quick Swap" },
     ],
   },
+  {
+    category: "Appliances",
+    image: image12,
+    type: "ecommerce",
+    icons: [
+      { icon: TbDeviceTvOld, label: "Latest Tech" },
+      { icon: FiShield, label: "Installation" },
+      { icon: FiTruck, label: "Home Delivery" },
+      { icon: TbReplaceFilled, label: "Best Deal" },
+    ],
+  },
+  {
+    category: "Furniture",
+    image: image13,
+    type: "ecommerce",
+    icons: [
+      { icon: TbArmchair, label: "Ergonomic" },
+      { icon: RiHome2Line, label: "Premium" },
+      { icon: FiTruck, label: "Heavy Duty" },
+      { icon: FiShield, label: "Long Lasting" },
+    ],
+  },
+  {
+    category: "Backpack",
+    image: image14,
+    type: "ecommerce",
+    icons: [
+      { icon: FiPackage, label: "Tough Build" },
+      { icon: FiMapPin, label: "Travel Ready" },
+      { icon: FiShield, label: "Waterproof" },
+      { icon: FiTruck, label: "Fast" },
+    ],
+  },
+  {
+    category: "Smart LED TV",
+    image: image15,
+    type: "ecommerce",
+    icons: [
+      { icon: FiMonitor, label: "4K Cinema" },
+      { icon: FiShield, label: "Panel Warranty" },
+      { icon: FiUserCheck, label: "Slim Look" },
+      { icon: TbReplaceFilled, label: "No Cost EMI" },
+    ],
+  },
+  {
+    category: "Covers",
+    image: image16,
+    type: "ecommerce",
+    icons: [
+      { icon: RiHardDriveLine, label: "Shockproof" }, // Fixed: Aerial ki jagah Armor/HardDrive
+      { icon: FiShield, label: "Dust Proof" },
+      { icon: FiTruck, label: "Low Price" },
+      { icon: FiActivity, label: "Perfect Grip" },
+    ],
+  },
+  {
+    category: "Speakers",
+    image: image17,
+    type: "ecommerce",
+    icons: [
+      { icon: FiSpeaker, label: "Deep Bass" }, // Fixed: Headphones ki jagah Speaker icon
+      { icon: TbHeadphones, label: "Stereo" },
+      { icon: FiShield, label: "Authentic" },
+      { icon: TbReplaceFilled, label: "Easy Return" },
+    ],
+  },
+  
 ];

@@ -1,29 +1,32 @@
 import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import axios from 'axios';
-import { serverURL } from '../App';
-import { setItemsInMyCity } from '../redux/userSlice';
+import { setAllItems, setItemsInMyCity } from '../redux/userSlice';
 
 const useGetItemsByCity = () => {
   const dispatch = useDispatch();
-const {userCity} = useSelector((state)=>state.user)
-  
+  // Loop todne ke liye URL direct likhein
+  const API_URL = "http://localhost:8000"; 
 
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const result = await axios.get(`${serverURL}/api/item/get-items-by-city/${userCity}`, {
+        const result = await axios.get(`${API_URL}/api/item/get-all-items`, {
           withCredentials: true,
         });
-        dispatch(setItemsInMyCity(result.data));
         
+        if (result.data) {
+          // Dono state update karein taaki kahin bhi data miss na ho
+          dispatch(setAllItems(result.data));
+          dispatch(setItemsInMyCity(result.data));
+        }
       } catch (error) {
-        console.log(error);
+        console.log("Fetch items error:", error);
       }
     };
 
     fetchItems();
-  }, [userCity]);
+  }, [dispatch]);
 };
 
 export default useGetItemsByCity;

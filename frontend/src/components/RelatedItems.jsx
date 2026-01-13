@@ -2,108 +2,112 @@ import React from "react";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../redux/userSlice";
 import { useNavigate } from "react-router-dom";
-import { CiShoppingCart } from "react-icons/ci";
-import { FaShoppingCart } from "react-icons/fa";
+import { HiOutlineShoppingBag } from "react-icons/hi2";
 
 const RelatedItems = ({ data }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
- const discountAmount = data?.originalPrice - data?.discountPrice;
-  const discountPercentage = data?.originalPrice
-    ? Math.round((discountAmount / data?.originalPrice) * 100)
-    : 0;
+
   if (!data || data.length === 0) return null;
 
   return (
-    <div className="mt-16 px-4 md:px-10 lg:px-20">
-      {/* Heading */}
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">
-        Related Products
-      </h1>
+    <div className="mt-16 mb-20 px-4 md:px-10 lg:px-16 max-w-[1600px] mx-auto">
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col">
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+            Style With These
+          </h2>
+          <div className="w-10 h-1 bg-black mt-1.5 rounded-full"></div>
+        </div>
+        <div className="hidden sm:flex">
+           <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Swipe to explore</span>
+        </div>
+      </div>
 
-      {/* Grid of cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 ">
-        {data.map((item) => (
-           <div
-                className="w-[180px] md:w-[230px] rounded-lg border border-gray-200 bg-white p-2 flex flex-col gap-1 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
+      {/* Fixed Height & Width Slider */}
+      <div className="flex overflow-x-auto gap-6 pb-10 scrollbar-hide snap-x">
+        {data.map((item) => {
+          const displayImg = item?.images?.[0]?.image1 || item?.images?.[0] || item?.image;
+          const sPrice = item.discountPrice || item.price;
+          const discount = item.originalPrice > sPrice 
+            ? Math.round(((item.originalPrice - sPrice) / item.originalPrice) * 100) 
+            : 0;
+
+          return (
+            <div 
+              key={item._id} 
+              /* Width and Height are now FIXED */
+              className="min-w-[190px] w-[190px] md:min-w-[240px] md:w-[240px] lg:min-w-[280px] lg:w-[280px] h-[340px] md:h-[400px] group snap-start bg-white rounded-3xl border border-gray-100 transition-all duration-300 flex flex-col overflow-hidden"
+            >
+              {/* Image Section - Fixed 65% height */}
+              <div 
+                className="relative h-[65%] bg-[#F9F9F9] cursor-pointer overflow-hidden flex items-center justify-center p-6"
+                onClick={() => {
                   navigate(`/single-item/${item._id}`);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
               >
-                {/* Image */}
-                <div className="relative w-full h-24 md:h-32 flex items-center justify-center overflow-hidden rounded-md bg-white">
-                  <img
-                    src={item?.images?.[0]?.image1 || "https://via.placeholder.com/150"}
-                    alt={item?.name}
-                    className="object-contain max-h-full"
-                  />
-                  {discountPercentage > 0 && (
-                    <span className="absolute top-1 left-1 bg-red-500 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
-                      {discountPercentage}% OFF
-                    </span>
-                  )}
-                </div>
-          
-                {/* Title */}
-                <h1 className="text-[15px] font-medium text-gray-900 truncate">
-                  {item?.name}
-                </h1>
-          
-                {/* Category */}
-                {item?.category && (
-                  <p className="text-[12px] text-gray-400 truncate">{item?.category}</p>
-                )}
-        
-          
-                {/* Price */}
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-900">
-                      ₹{item?.discountPrice}
-                    </span>
-                    {discountPercentage > 0 && (
-                      <span className="text-xs text-gray-400 line-through">
-                        ₹{item?.originalPrice}
-                      </span>
-                    )}
+                {discount > 0 && (
+                  <div className="absolute top-3 left-3 bg-black text-white text-[9px] font-bold px-2 py-1 rounded-md z-10 shadow-sm">
+                    {discount}% OFF
                   </div>
-                  {discountAmount > 0 && (
-                    <span className="text-[11px] text-red-500 font-medium">
-                      Save ₹{discountAmount}
-                    </span>
-                  )}
-                </div>
-          
-                {/* Add/Quantity Controls */}
-                <div className="mt-1">
-                  
-                    <button
-                      className="w-full h-8 rounded-md border border-green-500 text-green-600 bg-green-50 hover:bg-green-100 text-sm font-semibold flex items-center justify-center"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowStepper(true);
-                        setQuantity(1);
-                        dispatch(
-                          addToCart({
-                            id: item._id,
-                            name: item.name,
-                            shop: item.shop,
-                            price: item.discountPrice,
-                            quantity: 1,
-                            image: item?.images?.[0]?.image1,
-                          })
-                        );
-                      }}
-                    >
-                      <FaShoppingCart size={12} className="mr-1" />
-                      Add
-                    </button>
-                 
+                )}
+                
+                <img 
+                  src={displayImg} 
+                  alt={item.name} 
+                  className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                />
+
+                {/* Hover Add to Bag */}
+                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                   <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dispatch(addToCart({ ...item, id: item._id, quantity: 1, image: displayImg, price: sPrice }));
+                    }}
+                    className="bg-white text-black p-3.5 rounded-full shadow-xl translate-y-4 group-hover:translate-y-0 transition-all duration-300 hover:bg-black hover:text-white"
+                  >
+                    <HiOutlineShoppingBag size={20} />
+                  </button>
                 </div>
               </div>
-          
-        ))}
+
+              {/* Text Details Section - Fixed 35% height */}
+              <div className="p-4 flex flex-col justify-between flex-1">
+                <div>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                    {item.category || "Collection"}
+                  </p>
+                  
+                  <h3 className="text-[14px] font-semibold text-gray-800 line-clamp-1 group-hover:text-black transition-colors">
+                    {item.name}
+                  </h3>
+                </div>
+                
+                <div className="flex items-center justify-between mt-auto">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg font-bold text-gray-900">₹{sPrice}</span>
+                    {discount > 0 && (
+                      <span className="text-[11px] text-gray-300 line-through font-medium">₹{item.originalPrice}</span>
+                    )}
+                  </div>
+                  
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dispatch(addToCart({ ...item, id: item._id, quantity: 1, image: displayImg, price: sPrice }));
+                    }}
+                    className="text-gray-300 hover:text-black transition-colors md:block hidden"
+                  >
+                    <HiOutlineShoppingBag size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
