@@ -38,7 +38,6 @@ import useGetupdateLocation from "./hooks/useGetUpdateLocation";
 // Redux
 import { setSocket } from "./redux/userSlice";
 
-// Ise export rakhein par hook mein direct use karein
 export const serverURL = "https://ecommerce-backend-4hiu.onrender.com";
 
 const App = () => {
