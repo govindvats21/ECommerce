@@ -111,7 +111,7 @@ const AllProducts = () => {
               {/* Dynamic Brand Filter - Only shows when category is selected */}
               {selectedCategories.length > 0 && availableBrands.length > 0 && (
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-5 flex items-center gap-2 text-indigo-600">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-5 flex items-center gap-2 ">
                     <BiFilterAlt size={16} /> Brands
                   </h3>
                   <div className="flex flex-wrap lg:flex-col gap-2">
