@@ -17,7 +17,7 @@ const app = express();
 const server = http.createServer(app)
 const io = new Server(server,{
    cors:{
-    origin: "https://ecommerce-frontend-a5ji.onrender.com",
+    origin: "https://ecommerce-f-ptdw.onrender.com",
     credentials: true,
     methods:["POST", "GET"]
   }
@@ -29,7 +29,7 @@ const port = process.env.PORT;
 
 app.use(
   cors({
-    origin: "https://ecommerce-frontend-a5ji.onrender.com",
+    origin: "https://ecommerce-f-ptdw.onrender.com",
     credentials: true,
   })
 );
