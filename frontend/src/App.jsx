@@ -40,7 +40,7 @@ import { setSocket } from "./redux/userSlice";
 
 // Ise export rakhein par hook mein direct use karein
 export const serverURL = "https://ecommerce-backend-gji6.onrender.com";
-
+//
 const App = () => {
   const { userData } = useSelector((state) => state.user);
   const dispatch = useDispatch();
