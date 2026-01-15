@@ -15,10 +15,22 @@ const UserOrderCard = ({ data }) => {
     });
   };
 
-  console.log(data);
-  // State
+  // --- Image Logic Fix ---
+  const getImageUrl = (item) => {
+    // 1. Pehle direct item.images check karein (Jo order mein save hua)
+    // 2. Phir item.item.images check karein (Jo populate hokar aaya)
+    const path = 
+      (item?.images && item.images.length > 0 ? item.images[0] : null) || 
+      (item?.item?.images && item.item.images.length > 0 ? item.item.images[0] : null);
 
+    if (!path) return "https://via.placeholder.com/150?text=No+Image";
 
+    if (path.startsWith("http")) return path;
+
+    // Backend static folder ke liye path fix
+    const cleanPath = path.replace(/\\/g, "/");
+    return `${serverURL}/${cleanPath}`;
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 space-y-6 border border-gray-100 hover:shadow-xl transition duration-200">
@@ -32,7 +44,7 @@ const UserOrderCard = ({ data }) => {
             Placed on: {dateFormat(data?.createdAt)}
           </p>
           <span className="mt-1 inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-            {data.paymentMethod.toUpperCase()}
+            {data.paymentMethod?.toUpperCase()}
           </span>
         </div>
         <div className="text-right">
@@ -53,7 +65,7 @@ const UserOrderCard = ({ data }) => {
             <div className="flex items-center gap-2 mb-2">
               {shopOrder.shop?.logo && (
                 <img
-                  src={shopOrder.shop.logo}
+                  src={shopOrder.shop.logo.startsWith('http') ? shopOrder.shop.logo : `${serverURL}/${shopOrder.shop.logo.replace(/\\/g, "/")}`}
                   alt={shopOrder.shop.name}
                   className="w-6 h-6 object-contain rounded-full"
                 />
@@ -72,15 +84,12 @@ const UserOrderCard = ({ data }) => {
                 className="w-36 shrink-0 rounded-lg bg-white shadow-sm p-2 hover:shadow-md transition cursor-pointer"
               >
                 <img
-                  src={
-                    item?.item?.images?.[0]?.image1 ||
-                    Object.values(item?.item?.images || {})[0] ||
-                    "https://via.placeholder.com/150"
-                  }
+                  src={getImageUrl(item)} // FIX: Naya function use kiya
                   alt={item?.name}
                   className="w-full h-24 object-cover rounded-md"
+                  onError={(e) => (e.target.src = "https://via.placeholder.com/150")}
                 />
-                <p className="text-sm font-medium mt-2">{item.name}</p>
+                <p className="text-sm font-medium mt-2 truncate">{item.name}</p>
                 <p className="text-xs text-gray-500">
                   Qty: {item.quantity} × ₹{item.price}
                 </p>
@@ -98,7 +107,7 @@ const UserOrderCard = ({ data }) => {
         </div>
       ))}
 
-      {data.shopOrders?.[0]?.status == "delivered" && (
+      {data.shopOrders?.[0]?.status === "delivered" && (
         <ReceiptDownloadButton order={data} />
       )}
 

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const deliveryAssignmentSchema = new mongoose.Schema({
   order: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
   shop: { type: mongoose.Schema.Types.ObjectId, ref: "Shop", required: true },
-  shopOrderId: { type: mongoose.Schema.Types.ObjectId, required: true }, // which shopOrder inside Order
+  shopOrderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true }, // which shopOrder inside Order
   broadcastedTo: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // candidate ids
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   status: {

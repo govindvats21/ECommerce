@@ -7,11 +7,13 @@ import {
   getMyOrders,
   getOrderById,
   getTodayDeliveries,
+  getAllDeliveryBoys,
   placeOrder,
   sendDeliveryOtp,
   updateOrderStatus,
   verifyDeliveryOtp,
   verifyPayment,
+
 } from "../controllers/orderController.js";
 
 const orderRouter = express.Router();
@@ -27,6 +29,7 @@ orderRouter.get("/get-assignments", isAuth, getDeliveryBoyAssignment);
 orderRouter.get("/get-current-order", isAuth, getCurrentOrder);
 orderRouter.get("/accept-order/:assignmentId", isAuth, acceptOrder);
 orderRouter.get("/get-today-deliveries", isAuth, getTodayDeliveries);
+orderRouter.get("/get-all-boys", isAuth, getAllDeliveryBoys);
 
 // Delivery Verification (OTP)
 orderRouter.post("/send-delivery-otp", isAuth, sendDeliveryOtp);

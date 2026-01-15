@@ -57,7 +57,7 @@ export const placeOrder = async (req, res) => {
             name: i.name,
             price: i.price,
             quantity: i.quantity,
-         images: Array.isArray(i.images) ? i.images : (i.image ? [i.image] : [])
+         images: i.images || [i.image] || []
           })),
         };
       })
@@ -196,80 +196,61 @@ export const getMyOrders = async (req, res) => {
   }
 };
 
-// 🚚 Order status update (Broadcast to All Delivery Boys)
+// Ye function naya add karna hai
+export const getAllDeliveryBoys = async (req, res) => {
+  try {
+    const boys = await User.find({ role: "deliveryBoy" }).select("fullName _id");
+    res.status(200).json(boys);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Is function ko replace kar lo (Manual Rider Support)
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId, shopId } = req.params;
-    const { status } = req.body;
+    const { status, riderId } = req.body; // Frontend se riderId aayegi
 
     const order = await Order.findById(orderId);
-    if (!order) return res.status(404).json({ message: "Order not found" });
-
     const shopOrder = order.shopOrders.find((o) => o.shop.toString() === shopId);
-    if (!shopOrder) return res.status(400).json({ message: "shop order not found" });
+    if (!shopOrder) return res.status(400).json({ message: "Order not found" });
 
     shopOrder.status = status;
-    await order.save();
 
-    let deliveryBoysPayload = [];
+    if (status === "out of delivery") {
+      // Agar rider select kiya hai toh usko, warna sabko broadcast
+      const query = riderId ? { _id: riderId } : { role: "deliveryBoy" };
+      const targets = await User.find(query);
+      const candidates = targets.map((b) => b._id);
 
-    // --- LOCATION LOGIC REMOVED: Sabhi available delivery boys ko bhejna ---
-    if (status == "out of delivery" && !shopOrder.assignment) {
-      
-      const allDeliveryBoys = await User.find({ role: "deliveryBoy" });
-      const busyIds = await DeliveryAssignment.find({
-        status: { $nin: ["broadcasted", "completed"] },
-      }).distinct("assignedTo");
+      const deliveryAssignment = await DeliveryAssignment.create({
+        order: order._id,
+        shop: shopOrder.shop,
+        shopOrderId: shopOrder._id,
+        broadcastedTo: candidates,
+        status: "broadcasted",
+      });
 
-      const busyIdSet = new Set(busyIds.map((id) => String(id)));
-      const availableBoys = allDeliveryBoys.filter((b) => !busyIdSet.has(String(b._id)));
-
-      const candidates = availableBoys.map((b) => b._id);
-
-      if (candidates.length > 0) {
-        const deliveryAssignment = await DeliveryAssignment.create({
-          order: order._id,
-          shop: shopOrder.shop,
-          shopOrderId: shopOrder._id,
-          broadcastedTo: candidates,
-          status: "broadcasted",
+      const io = req.app.get('io');
+      if (io) {
+        targets.forEach(boy => {
+          if (boy.socketId) {
+            io.to(boy.socketId).emit('newAssignment', {
+              assignmentId: deliveryAssignment._id,
+              shopName: "New Order",
+              deliveryAddress: order.deliveryAddress.text,
+              subTotal: shopOrder.subTotal,
+              itemsCount: shopOrder.shopOrderItems.length
+            });
+          }
         });
-
-        shopOrder.assignment = deliveryAssignment._id;
-        
-        deliveryBoysPayload = availableBoys.map((b) => ({
-          _id: b._id,
-          fullName: b.fullName,
-          mobile: b.mobileNumber,
-        }));
-
-        await deliveryAssignment.populate("order shop");
-        const io = req.app.get('io');
-        if (io) {
-          availableBoys.forEach(boy => {
-            if (boy.socketId) {
-              io.to(boy.socketId).emit('newAssignment', {
-                assignmentId: deliveryAssignment._id,
-                orderId: order._id,
-                shopName: deliveryAssignment.shop.name,
-                deliveryAddress: order.deliveryAddress.text,
-                subTotal: shopOrder.subTotal
-              });
-            }
-          });
-        }
       }
     }
-
     await order.save();
-    await order.populate("shopOrders.shop shopOrders.assignedDeliveryBoy user");
-
-    res.status(200).json({
-      shopOrder,
-      availableBoys: deliveryBoysPayload,
-    });
+    res.status(200).json({ message: "Status Updated" });
   } catch (error) {
-    res.status(500).json({ message: `update status error ${error.message}` });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -436,13 +417,23 @@ export const getDeliveryBoyAssignment = async (req, res) => {
       status: "broadcasted",
     }).populate("order shop");
 
-    const data = assignments.map((a) => ({
-      assignmentId: a._id,
-      orderId: a.order._id,
-      shopName: a.shop.name,
-      deliveryAddress: a.order.deliveryAddress,
-      subTotal: a.order.shopOrders.find(so => so._id.equals(a.shopOrderId))?.subTotal
-    }));
+    const data = assignments.map((a) => {
+      // Order ke andar se wo specific shopOrder dhundo jiska kaam delivery boy ko karna hai
+      const specificShopOrder = a.order?.shopOrders?.find(
+        (so) => so._id.toString() === a.shopOrderId.toString()
+      );
+
+      return {
+        assignmentId: a._id,
+        orderId: a.order?._id,
+        shopName: a.shop?.name || "Shop",
+        deliveryAddress: a.order?.deliveryAddress?.text || a.order?.deliveryAddress,
+        // Yahan se asli data jayega
+        subTotal: specificShopOrder?.subTotal || 0,
+        itemsCount: specificShopOrder?.shopOrderItems?.length || 0 
+      };
+    });
+
     res.status(200).json(data);
   } catch (error) {
     res.status(500).json({ message: error.message });
