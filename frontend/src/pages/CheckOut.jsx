@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaShieldAlt, FaSearch, FaMapMarkerAlt, FaUser, FaPhoneAlt, FaCreditCard, FaTruck, FaCheckCircle } from "react-icons/fa";
+import { FaShieldAlt, FaCreditCard, FaTruck, FaCheckCircle, FaShoppingBag } from "react-icons/fa";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -7,14 +7,11 @@ import axios from "axios";
 import "leaflet/dist/leaflet.css";
 import { serverURL } from "../App";
 
-// Map Jump Component
 function ChangeView({ center }) {
   const map = useMap();
   useEffect(() => {
-    if (center) {
-      map.setView(center, 16);
-    }
-  }, [center, map]);
+    if (center) { map.setView(center, 16); }
+  }, [center]);
   return null;
 }
 
@@ -38,130 +35,52 @@ const CheckOut = () => {
     pincode: "",
   });
 
-  // --- Search Logic (FIXED: Fields will auto-fill now) ---
   const handleSearch = async () => {
     if (!searchQuery) return;
     try {
-      const res = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(searchQuery)}`);
-      if (res.data.length > 0) {
-        const firstResult = res.data[0];
-        const { lat, lon, address } = firstResult;
-        
-        // Map move karne ke liye position update
-        const newPos = [parseFloat(lat), parseFloat(lon)];
-        setPosition(newPos);
-
-        // Fields apne aap bharne ke liye
-        setFormData(prev => ({
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(searchQuery)}`);
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const result = data[0];
+        const { lat, lon, address } = result;
+        setPosition([parseFloat(lat), parseFloat(lon)]);
+        setFormData((prev) => ({
           ...prev,
-          area: firstResult.display_name || "",
-          city: address.city || address.town || address.village || address.suburb || "",
+          area: result.display_name || "",
+          city: address.city || address.town || address.village || address.suburb || address.city_district || address.county || "",
           state: address.state || "",
-          pincode: address.postcode || ""
+          pincode: address.postcode || "",
         }));
       }
-    } catch (err) { console.log(err); }
+    } catch (err) { console.error(err); }
   };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // --- RAZORPAY ONLINE PAYMENT LOGIC ---
-  const openRazorpay = (orderId, razorOrder) => {
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID, 
-      amount: razorOrder.amount,
-      currency: "INR",
-      name: "VatsStore",
-      description: "Secure Payment for Order",
-      order_id: razorOrder.id,
-      handler: async function (response) {
-        try {
-          const verifyRes = await axios.post(
-            `${serverURL}/api/order/verify-razorpay`,
-            {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              orderId,
-            },
-            { withCredentials: true }
-          );
-          if (verifyRes.status === 200) {
-            navigate("/order-success");
-          }
-        } catch (err) {
-          console.error("Payment verification failed", err);
-          alert("Payment verification failed!");
-        }
-      },
-      prefill: {
-        name: formData.fullName,
-        contact: formData.phone,
-      },
-      theme: { color: "#2563eb" },
-    };
-
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-  };
-
-  // --- FINAL ORDER SUBMISSION ---
   const handlePlaceOrder = async () => {
     if (!paymentMethod) return alert("Please select payment method!");
-    if (!cartItems || cartItems.length === 0) return alert("Cart is empty!");
-
-    const preparedCartItems = cartItems.map((item) => ({
-      product: item.product?._id || item.product || item._id, 
-      shop: item.shop?._id || item.shop,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity,
-      images: item.images || [item.image] || []
-    }));
-
     const orderData = {
       paymentMethod,
       totalAmount,
-      cartItems: preparedCartItems,
-      deliveryAddress: {
-        fullName: formData.fullName,
-        phone: formData.phone,
-        flatNo: formData.flatNo,
-        area: formData.area,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode,
-        landmark: formData.landmark,
-        latitude: position[0],
-        longitude: position[1],
-        text: `${formData.flatNo}, ${formData.area}, ${formData.city}`
-      },
+      cartItems: cartItems.map(item => ({
+        product: item.product?._id || item._id,
+        quantity: item.quantity,
+        price: item.price,
+        name: item.name
+      })),
+      deliveryAddress: { ...formData, latitude: position[0], longitude: position[1] },
     };
-
     try {
-      const res = await axios.post(`${serverURL}/api/order/place-order`, orderData, {
-        withCredentials: true
-      });
-      
-      if (res.status === 200) {
-        if (paymentMethod === "cod") {
-          alert("Order Placed!");
-          navigate("/order-success");
-        } else {
-          openRazorpay(res.data.orderId, res.data.razorOrder);
-        }
-      }
-    } catch (err) {
-      console.error("Order Error:", err.response?.data);
-      alert(err.response?.data?.message || "Order failed");
-    }
+      const res = await axios.post(`${serverURL}/api/order/place-order`, orderData, { withCredentials: true });
+      if (res.status === 200) navigate("/order-success");
+    } catch (err) { alert("Order failed!"); }
   };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 pb-20">
-      <header className="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-[1000] flex justify-between items-center shadow-sm">
+      <header className="bg-white border-b py-4 px-6 sticky top-0 z-[1000] flex justify-between items-center shadow-sm">
         <h1 onClick={() => navigate("/")} className="font-black text-2xl tracking-tighter cursor-pointer uppercase">
           Vats<span className="text-blue-600">Store</span>
         </h1>
@@ -171,120 +90,121 @@ const CheckOut = () => {
       </header>
 
       <div className="max-w-6xl mx-auto p-4 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
-        
         <div className="lg:col-span-8 space-y-6">
-          {/* STEP 1: DELIVERY DETAILS */}
-          <div className={`bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden transition-all ${step !== 1 ? 'opacity-90' : ''}`}>
-            <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+          {/* STEP 1: ADDRESS */}
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-6 bg-slate-50 border-b flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <span className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">1</span>
-                <h2 className="text-xl font-bold tracking-tight italic uppercase">Delivery Details</h2>
+                <h2 className="text-xl font-bold italic uppercase">Delivery Details</h2>
               </div>
-              {/* EDIT OPTION ENABLED */}
               {step === 2 && (
-                <button onClick={() => setStep(1)} className="text-blue-600 text-xs font-black uppercase tracking-widest underline">Edit Address</button>
+                <button onClick={() => setStep(1)} className="text-blue-600 text-xs font-black uppercase underline">Edit Address</button>
               )}
             </div>
 
-            <div className={`p-8 space-y-8 ${step !== 1 ? 'pointer-events-none' : ''}`}>
+            <div className={`p-8 space-y-8 ${step !== 1 ? "pointer-events-none opacity-60" : ""}`}>
               <div className="space-y-4">
                 <div className="flex gap-2">
                   <input 
-                    type="text" 
-                    placeholder="Search your area..." 
-                    className="flex-1 pl-6 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    type="text" placeholder="Search area..." 
+                    className="flex-1 px-6 py-3.5 bg-slate-100 border-none rounded-2xl text-sm"
+                    value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   />
-                  <button onClick={handleSearch} className="bg-slate-900 text-white px-8 rounded-2xl font-bold text-xs uppercase hover:bg-blue-600 transition-colors">Search</button>
+                  <button onClick={handleSearch} className="bg-slate-900 text-white px-8 rounded-2xl font-bold text-xs uppercase">Search</button>
                 </div>
-
-                <div className="h-64 rounded-[2rem] overflow-hidden border-4 border-slate-50 shadow-inner relative">
+                <div className="h-64 rounded-[2rem] overflow-hidden border-4 border-slate-50 relative">
                   <MapContainer center={position} zoom={13} className="h-full w-full">
                     <ChangeView center={position} />
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    <Marker position={position} draggable={true} 
-                       eventHandlers={{ dragend: (e) => setPosition([e.target.getLatLng().lat, e.target.getLatLng().lng]) }}
-                    />
+                    <Marker position={position} />
                   </MapContainer>
                 </div>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <input name="fullName" type="text" value={formData.fullName} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm" placeholder="Full Name" />
-                <input name="phone" type="text" value={formData.phone} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm" placeholder="Mobile Number" />
-                <input name="flatNo" type="text" value={formData.flatNo} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm md:col-span-2" placeholder="House / Flat / Building" />
-                <textarea name="area" value={formData.area} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm md:col-span-2 h-20 resize-none" placeholder="Street Address" />
-                <input name="city" type="text" value={formData.city} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm" placeholder="City" />
-                <input name="state" type="text" value={formData.state} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm" placeholder="State" />
-                <input name="pincode" type="text" value={formData.pincode} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm" placeholder="Pincode" />
-                <input name="landmark" type="text" value={formData.landmark} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-sm" placeholder="Landmark" />
+                <input name="fullName" value={formData.fullName} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 rounded-2xl text-sm" placeholder="Full Name" />
+                <input name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 rounded-2xl text-sm" placeholder="Mobile Number" />
+                <input name="flatNo" value={formData.flatNo} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 rounded-2xl text-sm md:col-span-2" placeholder="House/Flat/Building" />
+                <textarea name="area" value={formData.area} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 rounded-2xl text-sm md:col-span-2 h-20" placeholder="Street Address" />
+                <input name="city" value={formData.city} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 rounded-2xl text-sm" placeholder="City" />
+                <input name="state" value={formData.state} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 rounded-2xl text-sm" placeholder="State" />
+                <input name="pincode" value={formData.pincode} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 rounded-2xl text-sm" placeholder="Pincode" />
+                <input name="landmark" value={formData.landmark} onChange={handleInputChange} className="w-full px-5 py-3.5 bg-slate-50 rounded-2xl text-sm" placeholder="Landmark" />
               </div>
-              <button onClick={() => setStep(2)} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em]">Confirm Delivery Address</button>
+              <button onClick={() => setStep(2)} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest">Confirm & Continue</button>
             </div>
           </div>
 
-          {/* STEP 2: PAYMENT METHOD */}
-          <div className={`bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden transition-all ${step !== 2 ? 'opacity-50' : ''}`}>
-            <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-4">
-              <span className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step === 2 ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-200 text-slate-500'}`}>2</span>
-              <h2 className={`text-xl font-bold tracking-tight italic uppercase ${step === 2 ? 'text-slate-900' : 'text-slate-400'}`}>Payment Option</h2>
+          {/* STEP 2: PAYMENT */}
+          <div className={`bg-white rounded-3xl shadow-sm border ${step !== 2 ? "opacity-50" : ""}`}>
+            <div className="p-6 bg-slate-50 border-b flex items-center gap-4">
+              <span className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step === 2 ? "bg-blue-600 text-white" : "bg-slate-200"}`}>2</span>
+              <h2 className="text-xl font-bold italic uppercase">Payment</h2>
             </div>
-
             {step === 2 && (
-              <div className="p-8 space-y-4 animate-in slide-in-from-bottom-5">
-                <div 
-                  onClick={() => setPaymentMethod("online")}
-                  className={`p-6 rounded-3xl border-2 flex items-center justify-between cursor-pointer transition-all ${paymentMethod === 'online' ? 'border-blue-600 bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${paymentMethod === 'online' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}><FaCreditCard size={20}/></div>
-                    <div>
-                      <p className="font-black text-sm uppercase tracking-tight">Pay Online</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">UPI, Cards, NetBanking</p>
-                    </div>
-                  </div>
-                  {paymentMethod === 'online' && <FaCheckCircle className="text-blue-600" size={24} />}
+              <div className="p-8 space-y-4">
+                <div onClick={() => setPaymentMethod("online")} className={`p-6 rounded-3xl border-2 flex items-center justify-between cursor-pointer ${paymentMethod === 'online' ? 'border-blue-600 bg-blue-50' : 'border-slate-100'}`}>
+                  <div className="flex items-center gap-4"><FaCreditCard className="text-blue-600" size={24} /> <span className="font-bold uppercase text-sm">Pay Online</span></div>
+                  {paymentMethod === 'online' && <FaCheckCircle className="text-blue-600" size={20} />}
                 </div>
-
-                <div 
-                  onClick={() => setPaymentMethod("cod")}
-                  className={`p-6 rounded-3xl border-2 flex items-center justify-between cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-blue-600 bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${paymentMethod === 'cod' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}><FaTruck size={20}/></div>
-                    <div>
-                      <p className="font-black text-sm uppercase tracking-tight">Cash on Delivery</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pay at your doorstep</p>
-                    </div>
-                  </div>
-                  {paymentMethod === 'cod' && <FaCheckCircle className="text-blue-600" size={24} />}
+                <div onClick={() => setPaymentMethod("cod")} className={`p-6 rounded-3xl border-2 flex items-center justify-between cursor-pointer ${paymentMethod === 'cod' ? 'border-blue-600 bg-blue-50' : 'border-slate-100'}`}>
+                  <div className="flex items-center gap-4"><FaTruck className="text-blue-600" size={24} /> <span className="font-bold uppercase text-sm">Cash on Delivery</span></div>
+                  {paymentMethod === 'cod' && <FaCheckCircle className="text-blue-600" size={20} />}
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* RIGHT: ORDER SUMMARY */}
+        {/* --- FIXED SUMMARY SECTION --- */}
         <div className="lg:col-span-4">
-          <div className="bg-slate-900 text-white rounded-[2.5rem] p-8 sticky top-28 shadow-2xl transition-all">
-            <h3 className="text-xl font-black italic tracking-tighter uppercase mb-8 border-b border-white/10 pb-4">Summary</h3>
+          <div className="bg-slate-900 text-white rounded-[2.5rem] p-8 sticky top-28 shadow-2xl transition-all border border-white/5">
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/10">
+              <FaShoppingBag className="text-blue-500" />
+              <h3 className="text-xl font-black italic tracking-tighter uppercase">Order Summary</h3>
+            </div>
+            
+            {/* Scrollable Item List */}
+            <div className="space-y-4 max-h-60 overflow-y-auto mb-8 pr-2 custom-scrollbar">
+              {cartItems?.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-2xl">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-bold uppercase truncate w-32">{item.name}</span>
+                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Qty: {item.quantity}</span>
+                  </div>
+                  <span className="text-sm font-black">₹{item.price * item.quantity}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Calculations */}
             <div className="space-y-4 mb-8">
-              <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest"><span>Items</span><span>{cartItems?.length || 0}</span></div>
-              <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest"><span>Shipping</span><span className="text-blue-400">FREE</span></div>
+              <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                <span>Subtotal</span>
+                <span>₹{totalAmount}</span>
+              </div>
+              <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                <span>Delivery Charge</span>
+                <span className="text-green-500">FREE</span>
+              </div>
               <div className="pt-6 border-t border-white/10 flex justify-between items-end">
-                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest leading-none">Total</span>
-                <span className="text-4xl font-black tracking-tighter italic leading-none">₹{totalAmount}</span>
+                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest leading-none mb-1">Total Payable</span>
+                <span className="text-4xl font-black tracking-tighter italic leading-none text-blue-500">₹{totalAmount}</span>
               </div>
             </div>
+
             <button 
               disabled={!paymentMethod || step === 1}
               onClick={handlePlaceOrder}
               className={`w-full py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all shadow-xl ${paymentMethod && step === 2 ? 'bg-blue-600 hover:bg-white hover:text-blue-600 shadow-blue-500/20' : 'bg-slate-800 text-slate-600 cursor-not-allowed'}`}
             >
-              {paymentMethod === 'cod' ? 'Place Order Now' : 'Pay & Place Order'}
+              {paymentMethod === 'cod' ? 'Confirm COD Order' : 'Pay & Place Order'}
             </button>
+            
+            <p className="text-center mt-4 text-[8px] font-bold text-slate-600 uppercase tracking-[0.2em]">
+              100% Secure & Encrypted Payment
+            </p>
           </div>
         </div>
       </div>
