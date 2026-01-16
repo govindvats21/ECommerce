@@ -22,7 +22,7 @@ const io = new Server(server,{
     methods:["POST", "GET"]
   }
 })
-
+app.set("trust proxy", 1);
 app.set("io",io)
 
 const port = process.env.PORT;

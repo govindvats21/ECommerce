@@ -22,15 +22,15 @@ const Signup = ({ closeModal, switchModal }) => {
   
   const role = watch("role");
 
+  // --- Normal Email/Password Signup ---
   const handleSignUp = async (details) => {
     setLoading(true);
     try {
-      // FIX: Backend Geo-location error ke liye location object add kiya hai
       const finalPayload = {
         ...details,
         location: {
           type: "Point",
-          coordinates: [77.1025, 28.7041], // Default [longitude, latitude]
+          coordinates: [77.1025, 28.7041], 
         }
       };
 
@@ -38,7 +38,13 @@ const Signup = ({ closeModal, switchModal }) => {
         withCredentials: true,
       });
 
-      dispatch(setUserData(res.data));
+      // 🔥 FIX 1: Token ko LocalStorage mein save karein
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+
+      // Backend response se user data dispatch karein
+      dispatch(setUserData(res.data.user || res.data));
       localStorage.setItem("isLoggedIn", "true");
       
       if (closeModal) closeModal();
@@ -46,16 +52,18 @@ const Signup = ({ closeModal, switchModal }) => {
       alert("Signup Successful!");
     } catch (error) {
       console.error("Signup Error:", error.response?.data);
-      alert(error.response?.data?.message || "Signup failed. Check console.");
+      alert(error.response?.data?.message || "Signup failed.");
     } finally {
       setLoading(false);
     }
   };
 
+  // --- Google Authentication ---
   const handleGoogleAuth = async () => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
+      
       const { data } = await axios.post(`${serverURL}/api/auth/google-auth`, {
           fullName: result.user.displayName,
           email: result.user.email,
@@ -64,12 +72,19 @@ const Signup = ({ closeModal, switchModal }) => {
           location: { type: "Point", coordinates: [77.1025, 28.7041] }
       }, { withCredentials: true });
       
-      dispatch(setUserData(data));
+      // 🔥 FIX 2: Google login ke baad bhi token save karein
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      dispatch(setUserData(data.user || data));
       localStorage.setItem("isLoggedIn", "true");
+      
       if (closeModal) closeModal();
       navigate("/");
     } catch (error) {
-      console.log(error);
+      console.error("Google Auth Error:", error);
+      alert("Google Login failed.");
     }
   };
 
@@ -89,6 +104,8 @@ const Signup = ({ closeModal, switchModal }) => {
               className="w-full border-2 rounded-2xl px-4 py-3.5 outline-none focus:border-orange-500 transition-all" 
               {...register("fullName", { required: "Name is required" })} 
             />
+            {errors.fullName && <p className="text-red-500 text-[10px] mt-1">{errors.fullName.message}</p>}
+
             <input 
               type="email" 
               placeholder="Email Address" 
@@ -101,6 +118,7 @@ const Signup = ({ closeModal, switchModal }) => {
               className="w-full border-2 rounded-2xl px-4 py-3.5 outline-none focus:border-orange-500 transition-all" 
               {...register("mobile", { required: "Mobile is required" })} 
             />
+            
             <div className="relative">
               <input 
                 type={showPassword ? "text" : "password"} 

@@ -26,17 +26,24 @@ const Nav = () => {
   const themeText = "text-blue-600";
   const themeBorder = "border-blue-200";
 
-  const handleLogout = async () => {
-    try {
-      await axios.get(`${serverURL}/api/auth/signOut`, { withCredentials: true });
-      dispatch(setUserData(null));
-      localStorage.removeItem("isLoggedIn");
-      setShowInfo(false);
-      navigate("/");
-    } catch (error) {
-      console.log(error);
-    }
-  };
+ const handleLogout = async () => {
+  try {
+    // 1. Backend ko bolo cookie clear kare
+    await axios.post(`${serverURL}/api/auth/signout`);
+
+    // 2. Frontend se token aur login status delete karo 🔥
+    localStorage.removeItem("token");
+    localStorage.removeItem("isLoggedIn");
+
+    // 3. Redux state clear karo
+    dispatch(setUserData(null));
+
+    // 4. User ko login page par bhej do
+    navigate("/signin");
+  } catch (error) {
+    console.error("Logout Error:", error);
+  }
+};
 
   const handleSearch = async () => {
     try {

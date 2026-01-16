@@ -19,36 +19,55 @@ const Signin = ({ closeModal, switchModal }) => {
     defaultValues: { role: "user" },
   });
 
+  // --- Normal Sign In ---
   const handleSignIn = async (details) => {
     try {
       const res = await axios.post(`${serverURL}/api/auth/signin`, details, {
         withCredentials: true,
       });
-      dispatch(setUserData(res.data));
+
+      // 🔥 FIX 1: Token ko LocalStorage mein save karein
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+
+      // Backend response se userData dispatch karein
+      dispatch(setUserData(res.data.userData || res.data));
       localStorage.setItem("isLoggedIn", "true");
+
       if (closeModal) closeModal();
-      navigate("/"); // Login ke baad home bhej do
+      navigate("/"); 
     } catch (error) {
       console.log(error);
       alert(error.response?.data?.message || "Login Failed");
     }
   };
 
+  // --- Google Sign In ---
   const handleGoogleAuth = async () => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
+      
       const { data } = await axios.post(
         `${serverURL}/api/auth/google-auth`,
         { email: result.user.email },
         { withCredentials: true }
       );
-      dispatch(setUserData(data));
+
+      // 🔥 FIX 2: Google login ke baad bhi token save karein
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      dispatch(setUserData(data.user || data));
       localStorage.setItem("isLoggedIn", "true");
+
       if (closeModal) closeModal();
       navigate("/");
     } catch (error) {
-      console.log(error);
+      console.log("Google Auth Error:", error);
+      alert("Google Login failed.");
     }
   };
 
@@ -68,6 +87,8 @@ const Signin = ({ closeModal, switchModal }) => {
               className="w-full border rounded-xl px-4 py-3 outline-none focus:border-orange-500"
               {...register("email", { required: "Email is required" })}
             />
+            {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
+            
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -79,14 +100,15 @@ const Signin = ({ closeModal, switchModal }) => {
                 {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
               </button>
             </div>
+            {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
           </div>
 
-          <button type="submit" className="w-full font-bold py-4 mt-6 rounded-xl text-white shadow-lg shadow-orange-100" style={{ backgroundColor: primaryColor }}>
+          <button type="submit" className="w-full font-bold py-4 mt-6 rounded-xl text-white shadow-lg shadow-orange-100 transition-transform active:scale-95" style={{ backgroundColor: primaryColor }}>
             LOGIN
           </button>
         </form>
 
-        <button className="w-full mt-4 flex items-center justify-center gap-2 border rounded-xl px-4 py-3 text-sm font-bold text-gray-700" onClick={handleGoogleAuth}>
+        <button className="w-full mt-4 flex items-center justify-center gap-2 border rounded-xl px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors" onClick={handleGoogleAuth}>
           <FcGoogle size={20} /> Google Login
         </button>
 

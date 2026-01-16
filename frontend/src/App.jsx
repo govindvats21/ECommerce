@@ -3,12 +3,12 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { io } from 'socket.io-client';
 import axios from "axios";
+
 // Layout
-import Nav from "./components/Nav"; // Nav ko yahan import karein
+import Nav from "./components/Nav";
 
 // Pages
 import Home from "./pages/Home";
-
 import CategoryPage from "./pages/CategoryPage";
 import Signup from "./pages/Signup";
 import Signin from "./pages/Sigin";
@@ -25,7 +25,6 @@ import SingleItem from "./pages/SingleItem";
 import AllProducts from "./pages/AllProducts";
 import Shop from "./pages/Shop";
 
-
 // Hooks
 import useGetCity from "./hooks/useGetCity";
 import useGetCurrentUser from "./hooks/useGetCurrentUser";
@@ -38,8 +37,18 @@ import useGetupdateLocation from "./hooks/useGetUpdateLocation";
 // Redux
 import { setSocket } from "./redux/userSlice";
 
-// Ise export rakhein par hook mein direct use karein
+// --- GLOBAL CONFIGURATION ---
+axios.defaults.withCredentials = true;
 export const serverURL = "https://ecommerce-backend-25sc.onrender.com";
+
+// 🔥 1. AXIOS INTERCEPTOR: Har request mein token chipkayega
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 const App = () => {
   const { userData } = useSelector((state) => state.user);
@@ -54,21 +63,34 @@ const App = () => {
   useGetMyOrders();    
   useGetupdateLocation(); 
 
+  // 🔥 2. SOCKET CONNECTION WITH HEADERS
   useEffect(() => {
     if (userData?._id) {
-      const socketInstance = io(serverURL, { withCredentials: true });
+      const token = localStorage.getItem("token");
+      
+      const socketInstance = io(serverURL, { 
+        withCredentials: true,
+        extraHeaders: {
+          Authorization: token ? `Bearer ${token}` : "" // Socket ke liye header
+        }
+      });
+
       dispatch(setSocket(socketInstance));
+
       socketInstance.on('connect', () => {
         socketInstance.emit('identify', { userId: userData._id });
       });
-      return () => socketInstance.disconnect();
+
+      return () => {
+        socketInstance.disconnect();
+      }
     }
   }, [userData?._id, dispatch]);
 
   return (
     <>
-      <Nav /> {/* Nav bar har page par dikhega */}
-      <div className="pt-[75px]"> {/* Space for fixed nav */}
+      <Nav />
+      <div className="pt-[75px]">
         <Routes>
           <Route path="/" element={<Home />} /> 
           <Route path="/all-products" element={<AllProducts />} />
