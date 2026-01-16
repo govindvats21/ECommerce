@@ -5,7 +5,7 @@ import { setUserData } from '../redux/userSlice';
 
 const useGetCurrentUser = () => {
   const dispatch = useDispatch();
-  const API_URL = "https://ecommerce-backend-25sc.onrender.com";
+  const API_URL = "https://ecommerce-backend-kx5b.onrender.com";
 
   useEffect(() => {
     const fetchUser = async () => {
