@@ -20,7 +20,7 @@ const orderRouter = express.Router();
 
 // User Orders & Payment
 orderRouter.post("/place-order", isAuth, placeOrder);
-orderRouter.post("/verify-paymnet", isAuth, verifyPayment);
+orderRouter.post("/verify-razorpay", isAuth, verifyPayment);
 orderRouter.get("/my-orders", isAuth, getMyOrders);
 orderRouter.get("/get-order-by-id/:orderId", isAuth, getOrderById);
 

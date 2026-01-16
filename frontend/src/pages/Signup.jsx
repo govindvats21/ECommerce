@@ -117,7 +117,7 @@ const Signup = ({ closeModal, switchModal }) => {
           <div className="my-6">
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 text-center">Register As</label>
             <div className="flex gap-2">
-              {["user", "owner", "delivery"].map((r) => (
+              {["user", "owner", "deliveryBoy"].map((r) => (
                 <button
                   key={r}
                   type="button"

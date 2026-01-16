@@ -21,53 +21,43 @@ function RecenterMap({ center }) {
     const map = useMap();
     useEffect(() => {
         if (center[0] && center[1]) {
-            map.setView(center, map.getZoom());
+            map.setView(center, 15);
         }
     }, [center, map]);
     return null;
 }
 
 const DeliveryBoyTracking = ({ data }) => {
-    // Console log to debug if map doesn't show
-    console.log("Map Props Received:", data);
-
+    // Live Location (from socket)
     const boyLat = data?.deliveryBoyLocation?.lat;
     const boyLon = data?.deliveryBoyLocation?.lon;
-    const custLat = data?.customerLocation?.lat;
-    const custLon = data?.customerLocation?.lon;
+    
+    // Static Order Location (from deliveryAddress object)
+    const custLat = data?.deliveryAddress?.latitude;
+    const custLon = data?.deliveryAddress?.longitude;
 
-    // Validation: Agar coords nahi hain toh map mat dikhao
-    if (!boyLat || !custLat) {
+    const mapCenter = [boyLat || custLat || 28.6139, boyLon || custLon || 77.2090];
+
+    if (!custLat || !custLon) {
         return (
             <div className="h-[300px] w-full flex items-center justify-center bg-gray-100 rounded-xl border-2 border-dashed">
-                <p className="text-gray-400 font-bold">FETCHING LIVE LOCATION...</p>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Waiting for Coordinates...</p>
             </div>
         );
     }
 
-    const deliveryBoyPos = [boyLat, boyLon];
-    const customerPos = [custLat, custLon];
-    const path = [deliveryBoyPos, customerPos];
-
     return (
         <div className='w-full h-[350px] mt-3 rounded-2xl overflow-hidden shadow-inner border-2 border-orange-500 relative z-0'>
-            <MapContainer 
-                className='w-full h-full' 
-                center={deliveryBoyPos} 
-                zoom={15} 
-                scrollWheelZoom={true}
-            >
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; OpenStreetMap'
-                />
+            <MapContainer className='w-full h-full' center={mapCenter} zoom={15} scrollWheelZoom={true}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <RecenterMap center={mapCenter} />
 
-                <RecenterMap center={deliveryBoyPos} />
+                {boyLat && <Marker position={[boyLat, boyLon]} icon={deliveryBoyIcon} />}
+                <Marker position={[custLat, custLon]} icon={customerIcon} />
 
-                <Marker position={deliveryBoyPos} icon={deliveryBoyIcon} />
-                <Marker position={customerPos} icon={customerIcon} />
-
-                <Polyline positions={path} color='#f97316' weight={5} dashArray="10, 15" opacity={0.7} />
+                {boyLat && (
+                    <Polyline positions={[[boyLat, boyLon], [custLat, custLon]]} color='#f97316' weight={5} dashArray="10, 15" opacity={0.7} />
+                )}
             </MapContainer>
         </div>
     );

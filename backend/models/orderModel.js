@@ -61,21 +61,30 @@ const orderSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true, // User ID hona zaroori hai
+      required: true,
     },
     paymentMethod: {
       type: String,
       enum: ["cod", "online"],
       required: true,
     },
+    // --- Detailed Address (Matches your new UI) ---
     deliveryAddress: {
-      text: { type: String, required: true },
-      latitude: { type: Number, default: 0 },
-      longitude: { type: Number, default: 0 },
+      fullName: { type: String, required: true },
+      phone: { type: String, required: true },
+      flatNo: { type: String, required: true },
+      area: { type: String, required: true }, // Street/Area details
+      city: { type: String, required: true },
+      state: { type: String, required: true },
+      pincode: { type: String, required: true },
+      landmark: { type: String },
+      // Map Coordinates for precise delivery
+      latitude: { type: Number, required: true }, 
+      longitude: { type: Number, required: true },
     },
     totalAmount: {
       type: Number,
-      required: true, // Amount missing toh nahi?
+      required: true,
     },
     shopOrders: [shopOrderSchema],
     payment: {

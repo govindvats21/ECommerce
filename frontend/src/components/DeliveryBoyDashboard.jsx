@@ -6,9 +6,6 @@ import Nav from "./Nav";
 import DeliveryBoyTracking from "./DeliveryBoyTracking";
 
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-} from "recharts";
-import {
   CiDeliveryTruck, CiShoppingCart, CiWallet, CiTimer,
 } from "react-icons/ci";
 
@@ -21,13 +18,11 @@ const DeliveryBoyDashboard = () => {
   const [otp, setOtp] = useState("");
   const [todayDeliveries, setTodayDeliveries] = useState([]);
 
-  // 1. Fetch Assignments (Backend se data lana)
   const getAssignments = async () => {
     try {
       const res = await axios.get(`${serverURL}/api/order/get-assignments`, {
         withCredentials: true,
       });
-      // Backend se jo data aa raha hai usme itemsCount aur subTotal hum bhej rahe hain
       setAssignments(res.data || []);
     } catch (error) {
       console.error("Error fetching assignments:", error);
@@ -93,15 +88,11 @@ const DeliveryBoyDashboard = () => {
     } catch (error) {}
   };
 
-  // --- Socket Logic (Live Order Alert) ---
   useEffect(() => {
     if (!socket) return;
 
     const handleNewAssignment = (data) => {
-      console.log("Socket New Assignment Received:", data);
-      
       const isForMe = data.broadcastedTo?.includes(userData._id) || data.sendTo === userData._id;
-
       if (isForMe) {
         setAssignments((prev) => {
           const exists = prev.find(a => (a.assignmentId === data.assignmentId) || (a._id === data.assignmentId));
@@ -128,9 +119,7 @@ const DeliveryBoyDashboard = () => {
   return (
     <div className="w-screen min-h-screen bg-gray-50 pt-[90px] flex flex-col items-center overflow-y-auto pb-10">
       <Nav />
-
       <div className="w-full max-w-[900px] flex flex-col gap-6 items-center">
-        {/* Welcome & Stats */}
         <div className="w-[92%] grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard icon={<CiDeliveryTruck size={28} className="text-green-500" />} label="Orders" value={assignments.length} />
           <StatCard icon={<CiShoppingCart size={28} className="text-orange-500" />} label="Active" value={currentOrder ? 1 : 0} />
@@ -138,18 +127,16 @@ const DeliveryBoyDashboard = () => {
           <StatCard icon={<CiTimer size={28} className="text-yellow-500" />} label="Today" value={todayDeliveries.length} />
         </div>
 
-        {/* Assignments List */}
         {!currentOrder && (
           <div className="bg-white rounded-2xl p-6 shadow-sm w-[92%] border border-gray-100">
             <h1 className="text-xl font-bold mb-4 text-gray-800">📦 New Requests</h1>
             <div className="space-y-4">
               {assignments.length > 0 ? (
                 assignments.map((a, index) => {
-                  // FAIL-SAFE LOGIC: Data Socket se ho ya API se, ye nikal lega
                   const price = a.subTotal || a.shopOrderId?.subTotal || 0;
                   const itemsCount = a.itemsCount || a.shopOrderId?.shopOrderItems?.length || a.items?.length || 0;
                   const shopName = a.shopName || a.shopOrderId?.shop?.name || "Order Request";
-                  const address = a.deliveryAddress?.text || a.deliveryAddress || "Check after accept";
+                  const address = a.deliveryAddress?.area || a.deliveryAddress?.city || "Check after accept";
 
                   return (
                     <div className="border rounded-2xl p-5 flex justify-between items-center bg-white hover:border-orange-200 transition" key={index}>
@@ -175,22 +162,28 @@ const DeliveryBoyDashboard = () => {
                   );
                 })
               ) : (
-                <div className="text-center py-10">
-                   <p className="text-gray-400 font-medium italic">No orders available right now...</p>
-                </div>
+                <div className="text-center py-10 text-gray-400 font-medium italic">No orders available right now...</div>
               )}
             </div>
           </div>
         )}
 
-        {/* Active Order Card */}
         {currentOrder && (
           <div className="bg-white rounded-[2rem] p-8 shadow-xl w-[92%] border-2 border-orange-500">
             <h2 className="text-2xl font-black italic uppercase mb-4 text-orange-600 tracking-tighter">Active Delivery</h2>
             <div className="bg-gray-50 p-5 rounded-[1.5rem] mb-6 border-l-4 border-orange-500">
               <p className="text-xs font-black text-gray-400 uppercase">Deliver To</p>
               <p className="font-bold text-xl text-gray-800">{currentOrder?.user?.fullName || "Customer"}</p>
-              <p className="text-sm text-gray-600 mt-1 italic">{currentOrder?.deliveryAddress?.text}</p>
+              <p className="text-sm text-gray-600 mt-1 italic">
+                {currentOrder?.deliveryAddress?.flatNo}, {currentOrder?.deliveryAddress?.area}, {currentOrder?.deliveryAddress?.city}
+              </p>
+              <a 
+                href={`https://www.google.com/maps?q=${currentOrder?.deliveryAddress?.latitude},${currentOrder?.deliveryAddress?.longitude}`}
+                target="_blank" rel="noreferrer"
+                className="inline-block mt-3 text-[10px] font-black bg-blue-100 text-blue-600 px-3 py-1 rounded-md uppercase"
+              >
+                Open in Google Maps ↗
+              </a>
             </div>
 
             <DeliveryBoyTracking data={currentOrder} />
@@ -198,7 +191,7 @@ const DeliveryBoyDashboard = () => {
             <div className="mt-8">
               {!showOtpBox ? (
                 <button
-                  className="w-full bg-black text-white font-black uppercase py-5 rounded-2xl hover:bg-green-600 transition-all duration-300 shadow-lg active:scale-95"
+                  className="w-full bg-black text-white font-black uppercase py-5 rounded-2xl hover:bg-green-600 transition shadow-lg active:scale-95"
                   onClick={sendOtp}
                 >
                   Confirm Arrival & Send OTP
@@ -207,9 +200,8 @@ const DeliveryBoyDashboard = () => {
                 <div className="space-y-4">
                    <p className="text-center text-xs font-bold text-gray-400 uppercase">Enter 4-Digit OTP</p>
                    <input
-                    type="text"
-                    maxLength="4"
-                    className="w-full border-2 border-gray-200 px-4 py-4 rounded-2xl text-center text-4xl font-black tracking-[15px] focus:border-orange-500 outline-none transition-all"
+                    type="text" maxLength="4"
+                    className="w-full border-2 border-gray-200 px-4 py-4 rounded-2xl text-center text-4xl font-black tracking-[15px] focus:border-orange-500 outline-none"
                     placeholder="0000"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
