@@ -39,7 +39,7 @@ import { setSocket } from "./redux/userSlice";
 
 // --- GLOBAL CONFIGURATION ---
 axios.defaults.withCredentials = true;
-export const serverURL = "https://ecommerce-backend-kx5b.onrender.com";
+export const serverURL = "https://ecommerce-backend-imja.onrender.com";
 
 // 🔥 1. AXIOS INTERCEPTOR: Har request mein token chipkayega
 axios.interceptors.request.use((config) => {
