@@ -39,9 +39,8 @@ import useGetupdateLocation from "./hooks/useGetUpdateLocation";
 import { setSocket } from "./redux/userSlice";
 
 // Ise export rakhein par hook mein direct use karein
-export const serverURL = "https://ecommerce-backend-gji6.onrender.com";
+export const serverURL = "https://ecommerce-backend-25sc.onrender.com";
 
-axios.defaults.withCredentials = true;
 const App = () => {
   const { userData } = useSelector((state) => state.user);
   const dispatch = useDispatch();
