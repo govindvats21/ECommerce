@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { io } from 'socket.io-client';
-
+import axios from "axios";
 // Layout
 import Nav from "./components/Nav"; // Nav ko yahan import karein
 
@@ -40,7 +40,8 @@ import { setSocket } from "./redux/userSlice";
 
 // Ise export rakhein par hook mein direct use karein
 export const serverURL = "https://ecommerce-backend-gji6.onrender.com";
-//
+
+axios.defaults.withCredentials = true;
 const App = () => {
   const { userData } = useSelector((state) => state.user);
   const dispatch = useDispatch();

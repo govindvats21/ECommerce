@@ -11,9 +11,14 @@ import orderRouter from "./routes/orderRoutes.js";
 import http from 'http'
 import { Server } from "socket.io";
 import { socketHandler } from "./socket.js";
+
 dotenv.config();
 
 const app = express();
+
+// 🔥 RENDER KE LIYE SABSE ZAROORI LINE
+app.set("trust proxy", 1); 
+
 const server = http.createServer(app)
 const io = new Server(server,{
    cors:{
@@ -25,8 +30,9 @@ const io = new Server(server,{
 
 app.set("io",io)
 
-const port = process.env.PORT;
+const port = process.env.PORT || 5000;
 
+// ✅ CORS SETTINGS
 app.use(
   cors({
     origin: "https://ecommerce-frontend-2cfu.onrender.com",
@@ -37,15 +43,12 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+// ROUTES
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
-
-
-
-
 
 socketHandler(io)
 
