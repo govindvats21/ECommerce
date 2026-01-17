@@ -5,7 +5,7 @@ import { setUserData } from '../redux/userSlice';
 
 const useGetCurrentUser = () => {
   const dispatch = useDispatch();
-  const API_URL = "https://e-commerce-backend-one-inky.vercel.app";
+  const API_URL = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     const fetchUser = async () => {

@@ -20,7 +20,8 @@ app.set("trust proxy", 1);
 // CORS Configuration (Frontend URL agar production mein ho toh update karein)
 app.use(
   cors({
-    origin: "https://e-commerce-frontend-ecru-tau.vercel.app",
+    origin: [process.env.FRONTEND_URL,  
+      "http://localhost:5173"],
     credentials: true,
   })
 );
