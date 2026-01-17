@@ -1,71 +1,70 @@
-import nodemailer from "nodemailer";
+import { Resend } from 'resend';
 import dotenv from "dotenv";
 dotenv.config();
 
-// Transporter configuration jo Render par 100% chalti hai
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASS, // Render Dashboard par bina space wala password dalo
-  },
-  tls: {
-    // Ye line Google ke security blocks ko bypass karne mein help karti hai
-    rejectUnauthorized: false
-  }
-});
+// Gmail password ki ab koi zarurat nahi hai
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// 1. Password Reset Mail Function
+/**
+ * 1. Password Reset Mail
+ */
 export const sendOtpMail = async (to, otp) => {
   try {
-    await transporter.sendMail({
-      from: `"Delivery Service" <${process.env.EMAIL}>`,
-      to,
-      subject: "Reset Your Password",
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
-          <h2 style="color: #333;">Password Reset OTP</h2>
-          <p style="font-size: 24px; font-weight: bold; color: #ff4d2d;">${otp}</p>
-          <p>Ye OTP 5 minute mein expire ho jayega.</p>
-        </div>
-      `,
+    const { data, error } = await resend.emails.send({
+      from: 'VatsEcommerce <onboarding@resend.dev>', 
+      to: to,
+      subject: 'Reset Your Password - VatsEcommerce',
+      html: `<strong>Aapka Reset OTP hai: ${otp}</strong>`,
     });
-    console.log("✅ Reset OTP sent successfully");
-  } catch (error) {
-    console.error("❌ Reset Mail Error:", error.message);
+
+    if (error) {
+       console.error("❌ Resend Error:", error);
+       return null;
+    }
+    console.log("✅ Reset Mail Sent!");
+    return data;
+  } catch (err) {
+    console.error("❌ Fatal Error:", err.message);
   }
 };
 
-// 2. Delivery OTP Mail Function
+/**
+ * 2. Delivery OTP Mail
+ */
 export const sendDeliveryOtpMail = async (user, otp) => {
   try {
-    console.log("Email bhej raha hoon:", user.email);
+    const emailTo = user?.email || user;
+    const name = user?.fullName || "Customer";
 
-    const info = await transporter.sendMail({
-      from: `"Delivery Service" <${process.env.EMAIL}>`,
-      to: user.email,
-      subject: "Your Delivery OTP",
+    console.log(`VatsEcommerce mail bhej raha hai: ${emailTo}`);
+
+    const { data, error } = await resend.emails.send({
+      from: 'VatsEcommerce <onboarding@resend.dev>',
+      to: emailTo,
+      subject: 'Delivery OTP - VatsEcommerce',
       html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
-          <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; padding: 20px; border: 1px solid #ddd;">
-            <h2 style="color: #ff4d2d; text-align:center;">Delivery Verification</h2>
-            <p style="font-size: 16px; color: #555; text-align:center;">
-              Hi <strong>${user.fullName}</strong>, share this OTP with your rider:
-            </p>
-            <p style="font-size: 32px; font-weight: bold; color: #000; text-align:center; letter-spacing: 5px; margin: 20px 0;">
-              ${otp}
-            </p>
-            <p style="font-size: 12px; color: #888; text-align:center;">Valid for 5 minutes.</p>
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #2563eb; text-align: center;">VatsEcommerce Delivery</h2>
+          <p>Hi <strong>${name}</strong>, aapka delivery verification OTP niche hai:</p>
+          <div style="background: #f8fafc; padding: 20px; text-align: center; font-size: 30px; letter-spacing: 5px; font-weight: bold; color: #1e293b; border: 1px solid #e2e8f0;">
+            ${otp}
           </div>
+          <p style="font-size: 12px; color: #64748b; text-align: center; margin-top: 20px;">
+            Ye OTP sirf 5 minute tak valid hai. Kripya ise rider ke sath share karein.
+          </p>
         </div>
       `,
     });
 
-    console.log("✅ Delivery OTP Sent! ID:", info.messageId);
-    return info;
-  } catch (error) {
-    console.error("❌ NODEMAILER ERROR:", error.message);
-    // Error throw nahi karenge taaki backend crash na ho
+    if (error) {
+      console.error("❌ Resend Error:", error);
+      return null;
+    }
+
+    console.log("✅ Delivery Mail Sent via VatsEcommerce!");
+    return data;
+  } catch (err) {
+    console.error("❌ Fatal Error:", err.message);
     return null;
   }
 };
