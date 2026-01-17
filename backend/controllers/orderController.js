@@ -27,7 +27,7 @@ export const placeOrder = async (req, res) => {
 
     const groupItemsByShop = {};
     cartItems.forEach((item) => {
-      const shopId = item.shop?._id || item.shop; 
+      const shopId = item.shop?._id || item.shop;
       if (!shopId) return;
       if (!groupItemsByShop[shopId]) groupItemsByShop[shopId] = [];
       groupItemsByShop[shopId].push(item);
@@ -37,48 +37,51 @@ export const placeOrder = async (req, res) => {
       Object.keys(groupItemsByShop).map(async (shopId) => {
         const shop = await Shop.findById(shopId).populate("owner");
         if (!shop) throw new Error(`Shop not found: ${shopId}`);
+
         const items = groupItemsByShop[shopId];
-        const subTotal = items.reduce((sum, i) => sum + Number(i.quantity) * Number(i.price), 0);
+        const subTotal = items.reduce((sum, i) => sum + (Number(i.quantity) * Number(i.price)), 0);
+
         return {
           shop: shop._id,
           owner: shop.owner?._id || shop.owner,
           subTotal,
           status: "pending",
           shopOrderItems: items.map((i) => ({
-            item: i.product?._id || i.product || i._id, 
+            item: i.product || i._id,
             name: i.name,
-            price: i.price,
-            quantity: i.quantity,
-            images: i.images || [i.image] || []
+            price: Number(i.price),
+            quantity: Number(i.quantity),
+            // 🔥 Database mein images save ho rahi hain yahan
+            images: i.images || []
           })),
         };
       })
     );
 
-    const orderPayload = {
+    const newOrder = await Order.create({
       user: req.userId,
       paymentMethod,
-      deliveryAddress, 
       totalAmount,
       shopOrders,
-    };
+      deliveryAddress,
+      payment: paymentMethod === "cod" ? false : false
+    });
 
     if (paymentMethod === "online") {
       const razorOrder = await instance.orders.create({
         amount: Math.round(totalAmount * 100),
         currency: "INR",
-        receipt: `receipt_${Date.now()}`,
+        receipt: `order_rcpt_${newOrder._id}`,
       });
-      const newOrder = await Order.create({ ...orderPayload, razorPayOrderId: razorOrder.id, payment: false });
+      newOrder.razorPayOrderId = razorOrder.id;
+      await newOrder.save();
       return res.status(200).json({ razorOrder, orderId: newOrder._id });
     }
 
-    // COD Flow (No change)
-    const newOrder = await Order.create(orderPayload);
-    return res.status(200).json(newOrder);
-
+    res.status(200).json(newOrder);
   } catch (error) {
-    res.status(500).json({ message: `Server Error: ${error.message}` });
+    console.error("Order Creation Error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -193,20 +196,21 @@ export const updateOrderStatus = async (req, res) => {
         status: "broadcasted",
       });
 
+      // Pura data populate karke socket par bhejein
+      await deliveryAssignment.populate("shop");
+
       const io = req.app.get('io');
       if (io) {
         targets.forEach(boy => {
           if (boy.socketId) {
             io.to(boy.socketId).emit('newAssignment', {
               assignmentId: deliveryAssignment._id,
-              // Naya Address format bhejein
-              deliveryAddress: `${order.deliveryAddress.flatNo}, ${order.deliveryAddress.area}, ${order.deliveryAddress.city}`,
-              location: {
-                lat: order.deliveryAddress.latitude,
-                lng: order.deliveryAddress.longitude
-              },
+              // Frontend yahan se data uthayega:
+              shopName: deliveryAssignment.shop?.name || "New Shop Order",
+              deliveryAddress: order.deliveryAddress.text || order.deliveryAddress,
               subTotal: shopOrder.subTotal,
-              itemsCount: shopOrder.shopOrderItems.length
+              itemsCount: shopOrder.shopOrderItems.length,
+              broadcastedTo: candidates // Security check ke liye
             });
           }
         });
@@ -380,20 +384,21 @@ export const getDeliveryBoyAssignment = async (req, res) => {
     const assignments = await DeliveryAssignment.find({
       broadcastedTo: req.userId,
       status: "broadcasted",
-    }).populate("order shop");
+    }).populate({
+      path: "order",
+      populate: { path: "shopOrders.shop" } // Shop details nikalne ke liye
+    }).populate("shop");
 
     const data = assignments.map((a) => {
-      // Order ke andar se wo specific shopOrder dhundo jiska kaam delivery boy ko karna hai
       const specificShopOrder = a.order?.shopOrders?.find(
         (so) => so._id.toString() === a.shopOrderId.toString()
       );
 
       return {
+        _id: a._id,
         assignmentId: a._id,
-        orderId: a.order?._id,
         shopName: a.shop?.name || "Shop",
         deliveryAddress: a.order?.deliveryAddress?.text || a.order?.deliveryAddress,
-        // Yahan se asli data jayega
         subTotal: specificShopOrder?.subTotal || 0,
         itemsCount: specificShopOrder?.shopOrderItems?.length || 0 
       };

@@ -14,114 +14,114 @@ const Signin = ({ closeModal, switchModal }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: { role: "user" },
-  });
+  const { register, handleSubmit, setError, formState: { errors } } = useForm();
 
-  // --- Normal Sign In ---
   const handleSignIn = async (details) => {
+    setLoading(true);
     try {
       const res = await axios.post(`${serverURL}/api/auth/signin`, details, {
         withCredentials: true,
       });
 
-      // 🔥 FIX 1: Token ko LocalStorage mein save karein
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
       }
-
-      // Backend response se userData dispatch karein
       dispatch(setUserData(res.data.userData || res.data));
       localStorage.setItem("isLoggedIn", "true");
 
       if (closeModal) closeModal();
       navigate("/"); 
     } catch (error) {
-      console.log(error);
-      alert(error.response?.data?.message || "Login Failed");
+      const message = error.response?.data?.message || "";
+      
+      // 🔥 Illegal Argument ya Wrong Password ki error password field ke niche
+      if (message.toLowerCase().includes("password") || message.toLowerCase().includes("illegal") || message.toLowerCase().includes("credentials")) {
+        setError("password", { type: "manual", message: "Incorrect password or invalid data" });
+      } 
+      // User not found ki error email ke niche
+      else if (message.toLowerCase().includes("user") || message.toLowerCase().includes("found")) {
+        setError("email", { type: "manual", message: "User not found with this email" });
+      } else {
+        setError("email", { type: "manual", message: message || "Login failed" });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  // --- Google Sign In ---
   const handleGoogleAuth = async () => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      
-      const { data } = await axios.post(
-        `${serverURL}/api/auth/google-auth`,
-        { email: result.user.email },
-        { withCredentials: true }
-      );
-
-      // 🔥 FIX 2: Google login ke baad bhi token save karein
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-
+      const { data } = await axios.post(`${serverURL}/api/auth/google-auth`, { email: result.user.email }, { withCredentials: true });
+      if (data.token) localStorage.setItem("token", data.token);
       dispatch(setUserData(data.user || data));
       localStorage.setItem("isLoggedIn", "true");
-
       if (closeModal) closeModal();
       navigate("/");
     } catch (error) {
-      console.log("Google Auth Error:", error);
-      alert("Google Login failed.");
+      console.error("Google login failed");
     }
   };
 
   const primaryColor = "#ff4d2d";
 
   return (
-    <div className="flex items-center justify-center p-4 min-h-[80vh]">
+    <div className="flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md">
-        <form onSubmit={handleSubmit(handleSignIn)}>
-          <h1 className="text-3xl font-black mb-2 text-[#ff4d2d]">Vats</h1>
-          <p className="text-gray-600 mb-6 text-sm font-bold">Welcome back!</p>
+        <form onSubmit={handleSubmit(handleSignIn)} noValidate>
+          <h1 className="text-4xl font-black mb-1 text-[#ff4d2d] tracking-tighter uppercase">vats</h1>
+          <p className="text-gray-500 mb-8 text-[10px] font-black uppercase tracking-[0.2em]">Sign In to Continue</p>
 
           <div className="space-y-4">
-            <input
-              type="email"
-              placeholder="Email Address"
-              className="w-full border rounded-xl px-4 py-3 outline-none focus:border-orange-500"
-              {...register("email", { required: "Email is required" })}
-            />
-            {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
-            
-            <div className="relative">
+            {/* EMAIL */}
+            <div className="flex flex-col gap-1">
               <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                className="w-full border rounded-xl px-4 py-3 pr-10 outline-none focus:border-orange-500"
-                {...register("password", { required: "Password is required" })}
+                type="email"
+                placeholder="Email Address"
+                className={`w-full border-2 rounded-2xl px-5 py-4 outline-none transition-all ${errors.email ? 'border-red-500 bg-red-50' : 'focus:border-orange-500 border-gray-100'}`}
+                {...register("email", { required: "Email is required" })}
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-gray-400">
-                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-              </button>
+              {errors.email && <span className="text-red-500 text-[10px] font-black ml-2 uppercase tracking-wider">{errors.email.message}</span>}
             </div>
-            {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
+            
+            {/* PASSWORD */}
+            <div className="flex flex-col gap-1">
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  className={`w-full border-2 rounded-2xl px-5 py-4 outline-none transition-all ${errors.password ? 'border-red-500 bg-red-50' : 'focus:border-orange-500 border-gray-100'}`}
+                  {...register("password", { required: "Password is required" })}
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-4.5 text-gray-400 mt-0.5">
+                  {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                </button>
+              </div>
+              {errors.password && <span className="text-red-500 text-[10px] font-black ml-2 uppercase tracking-wider">{errors.password.message}</span>}
+            </div>
           </div>
 
-          <button type="submit" className="w-full font-bold py-4 mt-6 rounded-xl text-white shadow-lg shadow-orange-100 transition-transform active:scale-95" style={{ backgroundColor: primaryColor }}>
-            LOGIN
+          <div className="flex justify-end mt-3">
+            <button type="button" onClick={() => { if(closeModal) closeModal(); navigate("/forgot-password"); }} className="text-[10px] font-black text-gray-400 hover:text-[#ff4d2d] uppercase tracking-widest">
+              Forgot Password?
+            </button>
+          </div>
+
+          <button disabled={loading} type="submit" className="w-full font-black py-4 mt-6 rounded-2xl text-white shadow-xl shadow-orange-100 uppercase tracking-[0.2em] text-[11px] active:scale-95 disabled:bg-gray-300 transition-all" style={{ backgroundColor: loading ? "#ccc" : primaryColor }}>
+            {loading ? "Verifying..." : "Login"}
           </button>
         </form>
 
-        <button className="w-full mt-4 flex items-center justify-center gap-2 border rounded-xl px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors" onClick={handleGoogleAuth}>
+        <button className="w-full mt-4 flex items-center justify-center gap-2 border-2 rounded-2xl px-4 py-4 text-[11px] font-black text-gray-700 hover:bg-gray-50 uppercase tracking-widest transition-all" onClick={handleGoogleAuth}>
           <FcGoogle size={20} /> Google Login
         </button>
 
-        <p className="mt-8 text-center text-sm text-gray-500 font-bold">
+        <p className="mt-8 text-center text-[10px] text-gray-400 font-black uppercase tracking-widest">
           Don't have an account?{" "}
-          <button 
-            type="button"
-            onClick={() => switchModal ? switchModal() : navigate("/signup")} 
-            className="font-black" 
-            style={{ color: primaryColor }}
-          >
-            SIGN UP
-          </button>
+          <button type="button" onClick={() => switchModal ? switchModal() : navigate("/signup")} className="underline ml-1" style={{ color: primaryColor }}>SIGN UP</button>
         </p>
       </div>
     </div>

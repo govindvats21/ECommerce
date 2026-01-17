@@ -12,7 +12,7 @@ import {
   sendDeliveryOtp,
   updateOrderStatus,
   verifyDeliveryOtp,
-  verifyPayment,
+  verifyPayment, 
 
 } from "../controllers/orderController.js";
 
@@ -37,5 +37,6 @@ orderRouter.post("/verify-delivery-otp", isAuth, verifyDeliveryOtp);
 
 // Shop Owner / Status Update
 orderRouter.post("/update-status/:orderId/:shopId", isAuth, updateOrderStatus);
+// orderRoutes.js
 
 export default orderRouter;

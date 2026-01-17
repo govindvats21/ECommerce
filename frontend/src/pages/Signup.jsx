@@ -16,7 +16,8 @@ const Signup = ({ closeModal, switchModal }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+  // setError ko nikaal liya manual errors set karne ke liye
+  const { register, handleSubmit, setValue, watch, setError, formState: { errors } } = useForm({
     defaultValues: { role: "user" },
   });
   
@@ -38,32 +39,38 @@ const Signup = ({ closeModal, switchModal }) => {
         withCredentials: true,
       });
 
-      // 🔥 FIX 1: Token ko LocalStorage mein save karein
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
       }
 
-      // Backend response se user data dispatch karein
       dispatch(setUserData(res.data.user || res.data));
       localStorage.setItem("isLoggedIn", "true");
       
       if (closeModal) closeModal();
       navigate("/");
-      alert("Signup Successful!");
     } catch (error) {
-      console.error("Signup Error:", error.response?.data);
-      alert(error.response?.data?.message || "Signup failed.");
+      const msg = error.response?.data?.message || "";
+      
+      // 🔥 BACKEND ERROR MAPPING (Field ke niche show hogi)
+      if (msg.toLowerCase().includes("email")) {
+        setError("email", { type: "manual", message: msg });
+      } else if (msg.toLowerCase().includes("mobile") || msg.toLowerCase().includes("phone")) {
+        setError("mobile", { type: "manual", message: msg });
+      } else if (msg.toLowerCase().includes("name")) {
+        setError("fullName", { type: "manual", message: msg });
+      } else {
+        setError("password", { type: "manual", message: msg });
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Google Authentication ---
+  // --- Google Auth ---
   const handleGoogleAuth = async () => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      
       const { data } = await axios.post(`${serverURL}/api/auth/google-auth`, {
           fullName: result.user.displayName,
           email: result.user.email,
@@ -72,19 +79,13 @@ const Signup = ({ closeModal, switchModal }) => {
           location: { type: "Point", coordinates: [77.1025, 28.7041] }
       }, { withCredentials: true });
       
-      // 🔥 FIX 2: Google login ke baad bhi token save karein
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-
+      if (data.token) { localStorage.setItem("token", data.token); }
       dispatch(setUserData(data.user || data));
       localStorage.setItem("isLoggedIn", "true");
-      
       if (closeModal) closeModal();
       navigate("/");
     } catch (error) {
-      console.error("Google Auth Error:", error);
-      alert("Google Login failed.");
+      console.error("Google Signup Error");
     }
   };
 
@@ -93,45 +94,72 @@ const Signup = ({ closeModal, switchModal }) => {
   return (
     <div className="flex items-center justify-center p-4 min-h-[80vh]">
       <div className="bg-white w-full max-w-md">
-        <form onSubmit={handleSubmit(handleSignUp)}>
+        <form onSubmit={handleSubmit(handleSignUp)} noValidate>
           <h1 className="text-4xl font-black mb-1 text-[#ff4d2d] tracking-tighter">vats</h1>
           <p className="text-gray-500 mb-6 text-xs font-bold uppercase tracking-widest">Create Your Account</p>
 
           <div className="space-y-4">
-            <input 
-              type="text" 
-              placeholder="Full Name" 
-              className="w-full border-2 rounded-2xl px-4 py-3.5 outline-none focus:border-orange-500 transition-all" 
-              {...register("fullName", { required: "Name is required" })} 
-            />
-            {errors.fullName && <p className="text-red-500 text-[10px] mt-1">{errors.fullName.message}</p>}
-
-            <input 
-              type="email" 
-              placeholder="Email Address" 
-              className="w-full border-2 rounded-2xl px-4 py-3.5 outline-none focus:border-orange-500 transition-all" 
-              {...register("email", { required: "Email is required" })} 
-            />
-            <input 
-              type="tel" 
-              placeholder="Mobile Number" 
-              className="w-full border-2 rounded-2xl px-4 py-3.5 outline-none focus:border-orange-500 transition-all" 
-              {...register("mobile", { required: "Mobile is required" })} 
-            />
-            
-            <div className="relative">
+            {/* FULL NAME */}
+            <div>
               <input 
-                type={showPassword ? "text" : "password"} 
-                placeholder="Password" 
-                className="w-full border-2 rounded-2xl px-4 py-3.5 outline-none focus:border-orange-500 transition-all" 
-                {...register("password", { required: "Min 6 characters", minLength: 6 })} 
+                type="text" 
+                placeholder="Full Name" 
+                className={`w-full border-2 rounded-2xl px-4 py-3.5 outline-none transition-all ${errors.fullName ? 'border-red-500 bg-red-50' : 'focus:border-orange-500'}`}
+                {...register("fullName", { required: "Name is required", minLength: { value: 3, message: "Min 3 characters" }})} 
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-4 text-gray-400">
-                {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
-              </button>
+              {errors.fullName && <p className="text-red-500 text-[10px] font-bold mt-1 ml-2 uppercase">{errors.fullName.message}</p>}
+            </div>
+
+            {/* EMAIL */}
+            <div>
+              <input 
+                type="email" 
+                placeholder="Email Address" 
+                className={`w-full border-2 rounded-2xl px-4 py-3.5 outline-none transition-all ${errors.email ? 'border-red-500 bg-red-50' : 'focus:border-orange-500'}`}
+                {...register("email", { 
+                  required: "Email is required", 
+                  pattern: { value: /^\S+@\S+$/i, message: "Invalid email address" } 
+                })} 
+              />
+              {errors.email && <p className="text-red-500 text-[10px] font-bold mt-1 ml-2 uppercase">{errors.email.message}</p>}
+            </div>
+
+            {/* MOBILE */}
+            <div>
+              <input 
+  type="tel" 
+  placeholder="Mobile Number" 
+  className={`w-full border-2 rounded-2xl px-4 py-3.5 outline-none transition-all ${errors.mobile ? 'border-red-500 bg-red-50' : 'focus:border-orange-500'}`}
+  {...register("mobile", { 
+    required: "Mobile is required", 
+    validate: {
+      isTenDigits: (v) => /^[6-9]\d{9}$/.test(v) || "Number must start with 6-9 and be 10 digits",
+      notFake: (v) => !/^(.)\1{9}$/.test(v) || "This is not a valid mobile number", // Roke ga 1111111111 ko
+      notSequence: (v) => v !== "1234567890" || "Please enter a genuine mobile number" // Roke ga 1234567890 ko
+    }
+  })} 
+/>
+{errors.mobile && <p className="text-red-500 text-[10px] font-bold mt-1 ml-2 uppercase">⚠️ {errors.mobile.message}</p>}
+            </div>
+            
+            {/* PASSWORD */}
+            <div>
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="Password" 
+                  className={`w-full border-2 rounded-2xl px-4 py-3.5 outline-none transition-all ${errors.password ? 'border-red-500 bg-red-50' : 'focus:border-orange-500'}`}
+                  {...register("password", { required: "Password is required", minLength: { value: 6, message: "Min 6 characters" }})} 
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-4 text-gray-400">
+                  {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                </button>
+              </div>
+              {errors.password && <p className="text-red-500 text-[10px] font-bold mt-1 ml-2 uppercase">{errors.password.message}</p>}
             </div>
           </div>
 
+          {/* ROLE SELECTOR */}
           <div className="my-6">
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 text-center">Register As</label>
             <div className="flex gap-2">
@@ -152,7 +180,7 @@ const Signup = ({ closeModal, switchModal }) => {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full font-black py-4 rounded-2xl text-white shadow-xl shadow-orange-100 uppercase tracking-widest text-xs disabled:bg-gray-400" 
+            className="w-full font-black py-4 rounded-2xl text-white shadow-xl shadow-orange-100 uppercase tracking-widest text-xs disabled:bg-gray-400 transition-all active:scale-95" 
             style={{ backgroundColor: loading ? "#ccc" : primaryColor }}
           >
             {loading ? "Creating Account..." : "SIGN UP"}
@@ -160,7 +188,7 @@ const Signup = ({ closeModal, switchModal }) => {
         </form>
 
         <button 
-          className="w-full mt-4 flex items-center justify-center gap-2 border-2 rounded-2xl px-4 py-3.5 text-xs font-black text-gray-700 hover:bg-gray-50 uppercase tracking-widest" 
+          className="w-full mt-4 flex items-center justify-center gap-2 border-2 rounded-2xl px-4 py-3.5 text-xs font-black text-gray-700 hover:bg-gray-50 uppercase tracking-widest transition-all" 
           onClick={handleGoogleAuth}
         >
           <FcGoogle size={18} /> Google Signup

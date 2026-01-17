@@ -37,7 +37,7 @@ export const signUp = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      secure: true,
+       secure: true,
       sameSite: "none",
       path: "/",
     });
@@ -51,12 +51,26 @@ export const signUp = async (req, res) => {
 };
 
 // --- SIGN IN ---
+// --- SIGN IN (Fixed for Google Users) ---
 export const signIn = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    
+    // 1. Password field check karein taaki bcrypt crash na ho
+    if (!password) {
+      return res.status(400).json({ message: "Password is required!" });
+    }
+
+    const user = await User.findOne({ email }).select("+password"); // password select karein
 
     if (!user) return res.status(400).json({ message: "User not found!" });
+
+    // 2. 🔥 Sabse zaroori check: Agar password database mein hai hi nahi (Google User)
+    if (!user.password) {
+      return res.status(400).json({ 
+        message: "This email is linked with Google. Please login using Google." 
+      });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
@@ -66,7 +80,7 @@ export const signIn = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      secure: true,
+     secure: true,
       sameSite: "none",
       path: "/",
     });
@@ -100,8 +114,8 @@ export const googleAuth = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
-      secure: true,
-      sameSite: "none",
+      secure: false,
+      sameSite: "strict",
     });
 
     return res.status(200).json({ userData: user, token });

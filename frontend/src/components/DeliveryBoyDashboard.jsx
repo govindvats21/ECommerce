@@ -3,203 +3,177 @@ import React, { useState, useEffect } from "react";
 import { serverURL } from "../App";
 import { useSelector } from "react-redux";
 import Nav from "./Nav";
-import DeliveryBoyTracking from "./DeliveryBoyTracking";
-import { CiDeliveryTruck, CiShoppingCart, CiWallet, CiTimer } from "react-icons/ci";
+import RiderTracking from "./RiderTracking";
+import { CiDeliveryTruck, CiShoppingCart, CiWallet, CiTimer, CiLocationOn } from "react-icons/ci";
+import { IoMdNotificationsOutline } from "react-icons/io";
 
 const DeliveryBoyDashboard = () => {
-  const { userData, socket } = useSelector((state) => state.user);
-
+  const { userData } = useSelector((state) => state.user);
   const [assignments, setAssignments] = useState([]);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [showOtpBox, setShowOtpBox] = useState(false);
   const [otp, setOtp] = useState("");
-  const [todayDeliveries, setTodayDeliveries] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [todayDeliveries, setTodayDeliveries] = useState([]);
 
-  const getAssignments = async () => {
-    try {
-      const res = await axios.get(`${serverURL}/api/order/get-assignments`, { withCredentials: true });
-      setAssignments(res.data || []);
-    } catch (error) { console.error("Error fetching assignments:", error); }
+  const formatAddress = (order) => {
+    const addr = order?.deliveryAddress || order?.order?.deliveryAddress;
+    if (!addr) return "Address Details Loading...";
+    return typeof addr === 'string' ? addr : `${addr.flatNo || ""}, ${addr.area || ""}, ${addr.city || ""}`;
   };
 
-  const getcurrentOrder = async () => {
+  const fetchData = async () => {
     try {
-      const res = await axios.get(`${serverURL}/api/order/get-current-order`, { withCredentials: true });
-      if(res.data) {
-        setCurrentOrder(res.data);
-      }
-    } catch (error) { console.error("Error current order:", error); }
+      const [assignRes, activeRes, earningsRes] = await Promise.all([
+        axios.get(`${serverURL}/api/order/get-assignments`, { withCredentials: true }),
+        axios.get(`${serverURL}/api/order/get-current-order`, { withCredentials: true }),
+        axios.get(`${serverURL}/api/order/get-today-deliveries`, { withCredentials: true })
+      ]);
+      setAssignments(assignRes.data || []);
+      setCurrentOrder(activeRes.data?._id ? activeRes.data : null);
+      setTodayDeliveries(earningsRes.data || []);
+    } catch (error) { console.error("Data Fetch Error:", error); }
   };
+
+  useEffect(() => { if (userData?._id) fetchData(); }, [userData]);
 
   const acceptOrder = async (id) => {
     try {
       await axios.get(`${serverURL}/api/order/accept-order/${id}`, { withCredentials: true });
-      await getcurrentOrder();
-      getAssignments();
-    } catch (error) { console.error("Accept error:", error); }
+      fetchData();
+    } catch (error) { alert("Accept Action Failed"); }
   };
 
-  const sendOtp = async () => {
+  const sendOtpToCustomer = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      // Backend check: shopOrder can be an object or just a string ID
-      const shopOrderId = currentOrder?.shopOrder?._id || currentOrder?.shopOrder;
-      
-      const res = await axios.post(`${serverURL}/api/order/send-delivery-otp`, {
-        orderId: currentOrder?._id,
-        shopOrderId: shopOrderId,
+      await axios.post(`${serverURL}/api/order/send-delivery-otp`, {
+        orderId: currentOrder._id,
+        shopOrderId: currentOrder.shopOrder._id
       }, { withCredentials: true });
       
-      if (res.status === 200 || res.data.success) {
-        setShowOtpBox(true);
-        alert("OTP Sent Successfully!");
-      }
+      alert("OTP Sent to Customer!");
+      setShowOtpBox(true);
     } catch (error) {
-      alert(error.response?.data?.message || "Error sending OTP");
-    } finally { setLoading(false); }
-  };
-
-  const verifyOtp = async () => {
-    if (!otp || otp.length < 4) return alert("Please enter 4-digit OTP");
-    try {
-      setLoading(true);
-      const shopOrderId = currentOrder?.shopOrder?._id || currentOrder?.shopOrder;
-
-      const res = await axios.post(`${serverURL}/api/order/verify-delivery-otp`, {
-        orderId: currentOrder?._id,
-        shopOrderId: shopOrderId,
-        otp,
-      }, { withCredentials: true });
-
-      if (res.status === 200 || res.data.success) {
-        alert("Delivery Confirmed! ₹50 Added to Wallet.");
-        setCurrentOrder(null);
-        setShowOtpBox(false);
-        setOtp("");
-        handleTodayDeliveries();
-        getAssignments();
-      }
-    } catch (error) {
-      alert(error.response?.data?.message || "Invalid OTP. Please try again.");
-    } finally { setLoading(false); }
-  };
-
-  const handleTodayDeliveries = async () => {
-    try {
-      const res = await axios.get(`${serverURL}/api/order/get-today-deliveries`, { withCredentials: true });
-      setTodayDeliveries(res.data || []);
-    } catch (error) {}
-  };
-
-  useEffect(() => {
-    if (!socket) return;
-    const handleNewAssignment = (data) => {
-      const isForMe = data.broadcastedTo?.includes(userData._id) || data.sendTo === userData._id;
-      if (isForMe) {
-        setAssignments((prev) => {
-          const exists = prev.find(a => (a.assignmentId === data.assignmentId) || (a._id === data.assignmentId));
-          if (exists) return prev;
-          return [data, ...prev];
-        });
-      }
-    };
-    socket.on("newAssignment", handleNewAssignment);
-    return () => socket.off("newAssignment", handleNewAssignment);
-  }, [socket, userData._id]);
-
-  useEffect(() => {
-    if (userData?._id) {
-      getAssignments();
-      getcurrentOrder();
-      handleTodayDeliveries();
+      alert("OTP Send Failed. Check Backend/Internet.");
+    } finally {
+      setLoading(false);
     }
-  }, [userData]);
+  };
 
-  const totalEarning = todayDeliveries.reduce((sum, d) => sum + d.count * 50, 0);
+  const handleVerifyOtp = async () => {
+    if(!otp || otp.length < 4) return alert("Enter 4-digit OTP");
+    try {
+      await axios.post(`${serverURL}/api/order/verify-delivery-otp`, {
+        orderId: currentOrder._id,
+        shopOrderId: currentOrder.shopOrder._id,
+        otp: otp
+      }, { withCredentials: true });
+      
+      alert("Order Delivered Successfully! 🎉");
+      setShowOtpBox(false);
+      setOtp("");
+      setCurrentOrder(null);
+      fetchData();
+    } catch (error) {
+      alert(error.response?.data?.message || "Invalid OTP");
+    }
+  };
 
   return (
-    <div className="w-screen min-h-screen bg-gray-50 pt-[90px] flex flex-col items-center overflow-y-auto pb-10">
+    <div className="w-full min-h-screen bg-[#F8F9FA] pt-7 flex flex-col items-center pb-10 px-4">
       <Nav />
-      <div className="w-full max-w-[900px] flex flex-col gap-6 items-center">
-        {/* Stats Grid */}
-        <div className="w-[92%] grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard icon={<CiDeliveryTruck size={28} className="text-green-500" />} label="Orders" value={assignments.length} />
-          <StatCard icon={<CiShoppingCart size={28} className="text-orange-500" />} label="Active" value={currentOrder ? 1 : 0} />
-          <StatCard icon={<CiWallet size={28} className="text-blue-600" />} label="Earned" value={`₹${totalEarning}`} />
-          <StatCard icon={<CiTimer size={28} className="text-yellow-500" />} label="Today" value={todayDeliveries.length} />
+      
+      {/* Header: Responsive Width */}
+      <div className="w-full max-w-[900px] flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic">Dashboard</h1>
+          <p className="text-[9px] text-green-600 font-bold uppercase tracking-widest flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Online
+          </p>
+        </div>
+        <div className="bg-white p-3 rounded-xl shadow-sm border relative">
+          <IoMdNotificationsOutline size={22} className="text-gray-600" />
+          {assignments.length > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>}
+        </div>
+      </div>
+
+      <div className="w-full max-w-[900px] space-y-6">
+        {/* Stats: Better spacing for PC & Mobile */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <StatItem icon={<CiDeliveryTruck size={22}/>} label="Requests" value={assignments.length} color="orange" />
+          <StatItem icon={<CiShoppingCart size={22}/>} label="Active" value={currentOrder ? 1 : 0} color="green" />
+          <StatItem icon={<CiWallet size={22}/>} label="Earnings" value={`₹${todayDeliveries.reduce((s,d)=>s+(d.count || 0)*50,0)}`} color="blue" />
+          <StatItem icon={<CiTimer size={22}/>} label="Today" value={todayDeliveries[0]?.count || 0} color="green" />
         </div>
 
-        {/* Requests List */}
-        {!currentOrder && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm w-[92%] border border-gray-100">
-            <h1 className="text-xl font-bold mb-4 text-gray-800">📦 New Requests</h1>
-            <div className="space-y-4">
-              {assignments.length > 0 ? assignments.map((a, index) => (
-                <div className="border rounded-2xl p-5 flex justify-between items-center bg-white hover:border-orange-200 transition" key={index}>
-                  <div className="flex-1">
-                    <p className="font-bold text-gray-900 text-lg uppercase italic tracking-tighter">
-                      {a.shopName || a.shopOrderId?.shop?.name || "New Request"}
-                    </p>
-                    <p className="text-gray-500 text-xs mt-1 line-clamp-1">
-                      {a.deliveryAddress?.text || "Address details available after accept"}
-                    </p>
+        {!currentOrder ? (
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <h2 className="text-sm font-black uppercase text-gray-400 mb-6 tracking-widest">Available Jobs</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {assignments.length > 0 ? assignments.map((a) => (
+                <div key={a.assignmentId} className="bg-gray-50 border border-gray-100 rounded-2xl p-5">
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="font-black text-lg text-gray-800 uppercase italic">{a.shopName}</p>
+                    <p className="font-black text-green-600 italic">₹{a.subTotal}</p>
                   </div>
-                  <button 
-                    className="bg-black text-white px-6 py-3 rounded-xl text-xs font-black uppercase hover:bg-orange-600 active:scale-95 transition ml-4"
-                    onClick={() => acceptOrder(a.assignmentId || a._id)}
-                  >
-                    Accept
-                  </button>
+                  <div className="flex items-start gap-2 mb-5">
+                    <CiLocationOn className="text-orange-500 shrink-0 mt-1" size={18} />
+                    <p className="text-[12px] font-bold text-gray-500 leading-snug">{formatAddress(a)}</p>
+                  </div>
+                  <button onClick={() => acceptOrder(a.assignmentId)} className="w-full bg-black text-white font-bold py-3.5 rounded-xl uppercase text-[10px] tracking-widest active:scale-95 transition-all">Accept Job</button>
                 </div>
               )) : (
-                <div className="text-center py-10 text-gray-400 italic font-medium">No orders available right now...</div>
+                <div className="col-span-full text-center py-10 opacity-30 font-bold uppercase text-[10px] tracking-[4px]">Waiting for requests...</div>
               )}
             </div>
           </div>
-        )}
-
-        {/* Active Order with Tracking and OTP */}
-        {currentOrder && (
-          <div className="bg-white rounded-[2rem] p-8 shadow-xl w-[92%] border-2 border-orange-500">
-            <h2 className="text-2xl font-black italic uppercase mb-4 text-orange-600 tracking-tighter">Active Delivery</h2>
-            
-            <div className="bg-gray-50 p-5 rounded-[1.5rem] mb-6 border-l-4 border-orange-500">
-              <p className="text-xs font-black text-gray-400 uppercase">Deliver To</p>
-              <p className="font-bold text-xl text-gray-800">{currentOrder?.user?.fullName || "Customer"}</p>
-              <p className="text-sm text-gray-600 mt-1 italic">{currentOrder?.deliveryAddress?.text}</p>
-            </div>
-
-            <DeliveryBoyTracking data={currentOrder} />
-
-            <div className="mt-8">
-              {!showOtpBox ? (
-                <button
-                  disabled={loading}
-                  className={`w-full ${loading ? 'bg-gray-400' : 'bg-black'} text-white font-black uppercase py-5 rounded-2xl shadow-lg active:scale-95 transition`}
-                  onClick={sendOtp}
-                >
-                  {loading ? "Please Wait..." : "Confirm Arrival & Send OTP"}
-                </button>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-center text-xs font-bold text-gray-400 uppercase">Enter 4-Digit OTP</p>
-                  <input
-                    type="number"
-                    className="w-full border-2 border-gray-200 px-4 py-4 rounded-2xl text-center text-4xl font-black tracking-[15px] focus:border-orange-500 outline-none"
-                    placeholder="0000"
-                    value={otp}
-                    onChange={(e) => { if(e.target.value.length <= 4) setOtp(e.target.value); }}
-                  />
-                  <button
-                    disabled={loading}
-                    className={`w-full ${loading ? 'bg-gray-400' : 'bg-orange-600'} text-white font-black uppercase py-5 rounded-2xl shadow-lg active:scale-95 transition`}
-                    onClick={verifyOtp}
-                  >
-                    {loading ? "Verifying..." : "Verify & Complete Order"}
-                  </button>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 max-w-[700px] mx-auto">
+            <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden">
+                <div className="bg-slate-900 p-4 flex justify-between items-center">
+                    <p className="text-white text-[10px] font-black uppercase tracking-[2px]">Ongoing Delivery</p>
+                    <p className="text-orange-500 text-[10px] font-black italic">ID: #{currentOrder._id.slice(-6)}</p>
                 </div>
-              )}
+                
+                <div className="p-5 md:p-8">
+                    <div className="flex items-start gap-3 mb-6 bg-orange-50/50 p-4 rounded-xl border border-dashed border-orange-200">
+                        <CiLocationOn className="text-orange-600 mt-1 shrink-0" size={22} />
+                        <p className="text-xs md:text-sm font-bold text-gray-700 leading-relaxed italic">{formatAddress(currentOrder)}</p>
+                    </div>
+
+                    <div className="rounded-2xl overflow-hidden border shadow-sm mb-6 h-[250px] md:h-[300px] relative z-0">
+                        <RiderTracking data={currentOrder} />
+                    </div>
+
+                    <div className="flex items-center gap-3 mb-8 px-2">
+                        <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center text-sm font-black italic">{currentOrder?.user?.fullName?.charAt(0)}</div>
+                        <div className="flex-1">
+                            <p className="font-bold text-gray-400 uppercase text-[8px] tracking-widest leading-none">Customer</p>
+                            <p className="font-black text-gray-800 text-sm">{currentOrder?.user?.fullName}</p>
+                            <p className="font-bold text-orange-600 text-sm mt-0.5">{currentOrder?.user?.mobileNumber}</p>
+                        </div>
+                    </div>
+
+                    {showOtpBox ? (
+                      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 animate-in slide-in-from-bottom duration-300">
+                        <p className="font-black text-center text-gray-400 uppercase text-[9px] tracking-widest mb-3">Confirm OTP</p>
+                        <input 
+                          type="text" maxLength="4" value={otp} onChange={(e) => setOtp(e.target.value)}
+                          placeholder="----"
+                          className="w-full text-center text-2xl font-black py-3 rounded-xl border-2 border-slate-300 bg-white mb-4 outline-none focus:border-orange-500"
+                        />
+                        <div className="flex gap-2">
+                           <button onClick={() => setShowOtpBox(false)} className="flex-1 py-3 bg-white border rounded-xl font-bold uppercase text-[9px]">Cancel</button>
+                           <button onClick={handleVerifyOtp} className="flex-[2] py-3 bg-orange-500 text-white rounded-xl font-black uppercase text-[9px] tracking-widest">Verify & Finish</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={sendOtpToCustomer} disabled={loading} className="w-full bg-black text-white font-black py-4 md:py-5 rounded-2xl uppercase text-[11px] tracking-[2px] shadow-lg active:scale-95 transition-all">
+                        {loading ? "SENDING..." : "Send OTP & Delivered"}
+                      </button>
+                    )}
+                </div>
             </div>
           </div>
         )}
@@ -208,11 +182,11 @@ const DeliveryBoyDashboard = () => {
   );
 };
 
-const StatCard = ({ icon, label, value }) => (
-  <div className="bg-white p-4 rounded-2xl flex flex-col items-center border border-gray-100 shadow-sm hover:shadow-md transition">
-    <div className="mb-1">{icon}</div>
-    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">{label}</p>
-    <p className="font-black text-xl text-gray-800">{value}</p>
+const StatItem = ({ icon, label, value, color }) => (
+  <div className="bg-white p-4 md:p-5 rounded-2xl flex flex-col items-center border border-gray-100 shadow-sm transition-transform active:scale-95">
+    <div className={`mb-2 text-${color}-500 p-2.5 bg-${color}-50 rounded-xl`}>{icon}</div>
+    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
+    <p className="text-sm md:text-lg font-black text-gray-800 mt-0.5">{value}</p>
   </div>
 );
 

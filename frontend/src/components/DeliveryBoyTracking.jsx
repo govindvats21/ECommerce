@@ -28,15 +28,11 @@ function RecenterMap({ center }) {
 }
 
 const DeliveryBoyTracking = ({ data }) => {
-    // Console log to debug if map doesn't show
-    console.log("Map Props Received:", data);
-
     const boyLat = data?.deliveryBoyLocation?.lat;
     const boyLon = data?.deliveryBoyLocation?.lon;
     const custLat = data?.customerLocation?.lat;
     const custLon = data?.customerLocation?.lon;
 
-    // Validation: Agar coords nahi hain toh map mat dikhao
     if (!boyLat || !custLat) {
         return (
             <div className="h-[300px] w-full flex items-center justify-center bg-gray-100 rounded-xl border-2 border-dashed">
@@ -61,12 +57,9 @@ const DeliveryBoyTracking = ({ data }) => {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; OpenStreetMap'
                 />
-
                 <RecenterMap center={deliveryBoyPos} />
-
                 <Marker position={deliveryBoyPos} icon={deliveryBoyIcon} />
                 <Marker position={customerPos} icon={customerIcon} />
-
                 <Polyline positions={path} color='#f97316' weight={5} dashArray="10, 15" opacity={0.7} />
             </MapContainer>
         </div>
