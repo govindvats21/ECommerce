@@ -2,16 +2,26 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Render/Cloud ke liye updated transporter
+// Transporter configuration for Render/Cloud
 const transporter = nodemailer.createTransport({
-  service: "gmail", // Render par ye sabse aasaan chalta hai
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // Port 587 ke liye false hi rehta hai
   auth: {
     user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASS, // Yahan 'App Password' hi dalna
+    pass: process.env.EMAIL_PASS, // Yahan 16-digit App Password aayega
   },
+  tls: {
+    // Ye settings timeout aur SSL errors se bachati hain
+    rejectUnauthorized: false,
+    minVersion: "TLSv1.2"
+  },
+  connectionTimeout: 10000, // 10 seconds tak try karega connect karne ka
+  greetingTimeout: 5000,
+  socketTimeout: 15000,
 });
 
-// 1. Password Reset OTP
+// 1. Password Reset Mail
 export const sendOtpMail = async (to, otp) => {
   try {
     await transporter.sendMail({
@@ -19,48 +29,51 @@ export const sendOtpMail = async (to, otp) => {
       to,
       subject: "Reset Your Password",
       html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
-          <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
-            <h2 style="color: #333;">Password Reset Request</h2>
-            <p style="font-size: 16px; color: #555;">Use the following OTP to proceed:</p>
-            <p style="font-size: 24px; font-weight: bold; color: #000; margin: 20px 0;">${otp}</p>
-          </div>
+        <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
+          <h2 style="color: #333;">Password Reset OTP</h2>
+          <p style="font-size: 24px; font-weight: bold;">${otp}</p>
         </div>
       `,
     });
-    console.log("Reset OTP Sent");
+    console.log("Reset OTP sent successfully");
   } catch (error) {
-    console.error("Mail Error:", error.message);
+    console.error("Reset Mail Error:", error.message);
   }
 };
 
-// 2. Delivery OTP
+// 2. Delivery OTP Mail
 export const sendDeliveryOtpMail = async (user, otp) => {
   try {
+    console.log("Starting email process for:", user.email);
+
     const info = await transporter.sendMail({
       from: `"Delivery Service" <${process.env.EMAIL}>`,
       to: user.email,
       subject: "Your Delivery OTP",
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
-          <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
+          <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; padding: 20px; border: 1px solid #ddd;">
             <h2 style="color: #ff4d2d; text-align:center;">Delivery Verification</h2>
             <p style="font-size: 16px; color: #555; text-align:center;">
-              Dear <strong>${user.fullName}</strong>,<br/>
-              Share this OTP with your delivery agent:
+              Hi <strong>${user.fullName}</strong>, share this OTP with your rider:
             </p>
-            <p style="font-size: 28px; font-weight: bold; color: #000; margin: 20px 0; text-align:center; letter-spacing: 4px;">
+            <p style="font-size: 32px; font-weight: bold; color: #000; text-align:center; letter-spacing: 5px; margin: 20px 0;">
               ${otp}
             </p>
-            <p style="font-size: 14px; color: #888; text-align:center;">Valid for 5 minutes.</p>
+            <p style="font-size: 12px; color: #888; text-align:center;">Valid for 5 minutes.</p>
           </div>
         </div>
       `,
     });
-    console.log("Delivery OTP Sent to:", user.email);
+
+    console.log("Delivery OTP Sent! MessageID:", info.messageId);
     return info;
   } catch (error) {
-    console.error("Delivery Mail Error:", error.message);
+    // Logs mein exact error dikhega
+    console.error("--- NODEMAILER ERROR ---");
+    console.error("Message:", error.message);
+    console.error("Code:", error.code);
+    console.error("------------------------");
     throw error;
   }
 };
