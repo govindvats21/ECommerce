@@ -1,7 +1,6 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { io } from 'socket.io-client';
+import { useSelector } from "react-redux";
 import axios from "axios";
 
 // Layout
@@ -26,22 +25,21 @@ import AllProducts from "./pages/AllProducts";
 import Shop from "./pages/Shop";
 
 // Hooks
-import useGetCity from "./hooks/useGetCity";
 import useGetCurrentUser from "./hooks/useGetCurrentUser";
+import useGetCity from "./hooks/useGetCity";
 import useGetMyShop from "./hooks/useGetMyShop";
 import useGetShopsByCity from "./hooks/useGetShopsByCity";
 import useGetItemsByCity from "./hooks/useGetItemByCity";
 import useGetMyOrders from "./hooks/useGetMyOrders";
 import useGetupdateLocation from "./hooks/useGetUpdateLocation";
 
-// Redux
-import { setSocket } from "./redux/userSlice";
-
 // --- GLOBAL CONFIGURATION ---
 axios.defaults.withCredentials = true;
-export const serverURL = "https://ecommerce-backend-chaa.onrender.com";
 
-// 🔥 1. AXIOS INTERCEPTOR: Har request mein token chipkayega
+// 🔥 Filhal Localhost URL
+export const serverURL = "http://localhost:8000"; 
+
+// AXIOS INTERCEPTOR: Token management
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -52,9 +50,8 @@ axios.interceptors.request.use((config) => {
 
 const App = () => {
   const { userData } = useSelector((state) => state.user);
-  const dispatch = useDispatch();
 
-  // Hooks call
+  // Saare data fetching hooks
   useGetCurrentUser(); 
   useGetCity();        
   useGetMyShop();      
@@ -63,29 +60,8 @@ const App = () => {
   useGetMyOrders();    
   useGetupdateLocation(); 
 
-  // 🔥 2. SOCKET CONNECTION WITH HEADERS
-  useEffect(() => {
-    if (userData?._id) {
-      const token = localStorage.getItem("token");
-      
-      const socketInstance = io(serverURL, { 
-        withCredentials: true,
-        extraHeaders: {
-          Authorization: token ? `Bearer ${token}` : "" // Socket ke liye header
-        }
-      });
-
-      dispatch(setSocket(socketInstance));
-
-      socketInstance.on('connect', () => {
-        socketInstance.emit('identify', { userId: userData._id });
-      });
-
-      return () => {
-        socketInstance.disconnect();
-      }
-    }
-  }, [userData?._id, dispatch]);
+  // Socket logic poori tarah se remove kar di gayi hai
+  // Isse localhost aur deployment dono par koi connection error nahi aayega
 
   return (
     <>
@@ -100,9 +76,11 @@ const App = () => {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
+          {/* Auth Routes */}
           <Route path="/signup" element={!userData ? <Signup /> : <Navigate to="/" />} />
           <Route path="/signin" element={!userData ? <Signin /> : <Navigate to="/" />} />
           
+          {/* Protected Routes */}
           <Route path="/create-edit-shop" element={userData ? <CreateAndEditShop /> : <Navigate to="/signin" />} />
           <Route path="/add-item" element={userData ? <AddItem /> : <Navigate to="/signin" />} />
           <Route path="/edit-item/:id" element={userData ? <EditItem /> : <Navigate to="/signin" />} />

@@ -8,28 +8,19 @@ import userRouter from "./routes/userRoutes.js";
 import shopRouter from "./routes/shopRoutes.js";
 import itemRouter from "./routes/itemRoutes.js";
 import orderRouter from "./routes/orderRoutes.js";
-import http from 'http'
-import { Server } from "socket.io";
-import { socketHandler } from "./socket.js";
+
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app)
-const io = new Server(server,{
-   cors:{
-    origin: "https://ecommerce-frontend-jkiv.onrender.com",
-    credentials: true,
-    methods:["POST", "GET"]
-  }
-})
+const port = process.env.PORT || 4000;
+
+// Render/Vercel ke liye trust proxy zaroori hai
 app.set("trust proxy", 1);
-app.set("io",io)
 
-const port = process.env.PORT;
-
+// CORS Configuration (Frontend URL agar production mein ho toh update karein)
 app.use(
   cors({
-    origin: "https://ecommerce-frontend-jkiv.onrender.com",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
   })
 );
@@ -37,19 +28,26 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+// Database Connection call
+connectDb();
+
+// API Routes
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 
-
-
-
-
-socketHandler(io)
-
-server.listen(port, () => {
-  connectDb();
-  console.log(`server started at port ${port}`);
+// Health Check Route
+app.get("/", (req, res) => {
+  res.send("VatsEcommerce API is Running...");
 });
+
+// Server Start (Vercel ke liye 'app' export karna zaroori hai)
+if (process.env.NODE_ENV !== "production") {
+  app.listen(port, () => {
+    console.log(`🚀 Server started at port ${port}`);
+  });
+}
+
+export default app;

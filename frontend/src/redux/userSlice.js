@@ -107,16 +107,14 @@ const userSlice = createSlice({
     setSearchItems: (state, action) => {
       state.searchItems = action.payload;
     },
-    setSocket: (state, action) => {
-      // socket logic
-    },
+   
   },
 });
 
 // ✨ Yahan 'setAllItems' export list mein add kar diya gaya hai
 export const {
   setUserData,
-  setAllItems, // 👈 Exported
+  setAllItems,
   setUserCity,
   setUserState,
   setUserAddress,
@@ -131,7 +129,7 @@ export const {
   updateOrderStatus,
   updateRealtimeOrderStatus,
   setSearchItems,
-  setSocket,
+  
 } = userSlice.actions;
 
 export default userSlice.reducer;
