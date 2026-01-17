@@ -16,13 +16,10 @@ const port = process.env.PORT || 4000;
 
 app.set("trust proxy", 1);
 
-// Dono URL direct likh diye hain - Easy and Simple!
+// Backend ko pata hona chahiye ki request kahan se aa rahi hai
 app.use(
   cors({
-    origin: [
-      "https://e-commerce-frontend-ecru-tau.vercel.app", 
-      "http://localhost:5173"
-    ],
+    origin: ["https://e-commerce-frontend-ecru-tau.vercel.app", "http://localhost:5173"],
     credentials: true,
   })
 );
@@ -42,6 +39,7 @@ app.get("/", (req, res) => {
   res.send("VatsEcommerce API is Running...");
 });
 
+// Vercel ke liye server.listen ko production mein skip karna hota hai
 if (process.env.NODE_ENV !== "production") {
   app.listen(port, () => {
     console.log(`🚀 Server started at port ${port}`);
