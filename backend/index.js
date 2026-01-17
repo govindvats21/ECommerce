@@ -14,13 +14,15 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 4000;
 
-// Render/Vercel ke liye trust proxy zaroori hai
 app.set("trust proxy", 1);
 
-// CORS Configuration (Frontend URL agar production mein ho toh update karein)
+// Dono URL direct likh diye hain - Easy and Simple!
 app.use(
   cors({
-    origin: "https://e-commerce-frontend-ecru-tau.vercel.app",
+    origin: [
+      "https://e-commerce-frontend-ecru-tau.vercel.app", 
+      "http://localhost:5173"
+    ],
     credentials: true,
   })
 );
@@ -28,22 +30,18 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// Database Connection call
 connectDb();
 
-// API Routes
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 
-// Health Check Route
 app.get("/", (req, res) => {
   res.send("VatsEcommerce API is Running...");
 });
 
-// Server Start (Vercel ke liye 'app' export karna zaroori hai)
 if (process.env.NODE_ENV !== "production") {
   app.listen(port, () => {
     console.log(`🚀 Server started at port ${port}`);
