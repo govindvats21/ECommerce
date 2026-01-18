@@ -59,8 +59,6 @@ export default function ReceiptPage({ order }) {
 
           {/* Customer & Seller Section */}
           <div style={{ display: "flex", justifyContent: "space-between", margin: "30px 0", gap: "20px" }}>
-            
-            {/* Left Side: Billed To (Customer) */}
             <div style={{ width: "45%" }}>
               <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Billed To</h4>
               <p style={{ fontWeight: "bold", fontSize: "15px", margin: "10px 0 5px" }}>{order?.deliveryAddress?.fullName || order?.user?.fullName}</p>
@@ -69,41 +67,17 @@ export default function ReceiptPage({ order }) {
                 {order?.deliveryAddress?.city}, {order?.deliveryAddress?.state} - {order?.deliveryAddress?.pincode}<br/>
                 <b>Mobile: {order?.deliveryAddress?.phone}</b>
               </p>
-
-              <div style={{ marginTop: "20px" }}>
-                <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Payment Info</h4>
-                <p style={{ margin: "8px 0 0", fontSize: "12px" }}>Method: <b>{order?.paymentMethod?.toUpperCase()}</b></p>
-                <p style={{ margin: "3px 0", fontSize: "12px" }}>Status: <span style={{ color: "#16a34a", fontWeight: "bold" }}>PAID</span></p>
-              </div>
             </div>
 
-            {/* Right Side: Sold By (Seller/Shop) */}
-
-<div style={{ width: "45%", textAlign: "right" }}>
-  <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Sold By</h4>
-  {order?.shopOrders?.map((so, idx) => {
-    
-    // Yahan hum data ki safety check kar rahe hain
-    const shopData = so?.shop || {};
-    const ownerData = so?.owner || {};
-    
-    // User Model mein 'mobile' hai, isliye ownerData.mobile check kar rahe hain
-  
-    const sellerEmail = shopData?.email || ownerData?.email || "support@vatsstore.com";
-
-    return (
-      <div key={idx} style={{ marginTop: "10px" }}>
-        <p style={{ fontWeight: "bold", fontSize: "15px", margin: "0", color: "#1f2937" }}>
-          {shopData.name || "VatsStore Partner"}
-        </p>
-        <div style={{ margin: "4px 0", fontSize: "12px", color: "#475569", lineHeight: "1.4" }}>
-          {sellerEmail}<br/>
-          <div style={{ fontSize: "11px" }}>{shopData?.address || "Main Market, India"}</div>
-        </div>
-      </div>
-    );
-  })}
-</div>
+            <div style={{ width: "45%", textAlign: "right" }}>
+              <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Sold By</h4>
+              {order?.shopOrders?.map((so, idx) => (
+                <div key={idx} style={{ marginTop: "10px" }}>
+                  <p style={{ fontWeight: "bold", fontSize: "15px", margin: "0", color: "#1f2937" }}>{so?.shop?.name || "VatsStore Partner"}</p>
+                  <p style={{ fontSize: "12px", color: "#475569" }}>{so?.shop?.email || "support@vatsstore.com"}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Items Table */}
@@ -133,12 +107,15 @@ export default function ReceiptPage({ order }) {
             </tbody>
           </table>
 
-          {/* Footer Summary */}
-          <div style={{ marginTop: "30px", display: "flex", justifyContent: "space-between" }}>
+          {/* Footer Summary & Signature */}
+          <div style={{ marginTop: "40px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            {/* QR Code Section */}
             <div>
               <QRCode value={`Order:${order?._id}`} size={60} />
               <p style={{ fontSize: "9px", color: "#94a3b8", marginTop: "5px" }}>Official VATSTORE Invoice</p>
             </div>
+
+            {/* Price Calculations */}
             <div style={{ width: "250px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: "13px" }}>
                 <span>Subtotal:</span><span style={{ fontWeight: "bold" }}>₹{order?.totalAmount}</span>
@@ -150,18 +127,27 @@ export default function ReceiptPage({ order }) {
                 <span style={{ fontSize: "16px", fontWeight: "900" }}>TOTAL:</span>
                 <span style={{ fontSize: "16px", fontWeight: "900", color: "#1e40af" }}>₹{finalTotal}</span>
               </div>
+
+              {/* ⭐ FIXED SIGNATURE SECTION (Right Aligned under Total) ⭐ */}
+              <div style={{ marginTop: "40px", textAlign: "center", width: "160px", marginLeft: "auto" }}>
+                <img 
+                  src="/sign.jpg" 
+                  alt="Signature" 
+                  style={{ 
+                    width: "100px", 
+                    height: "auto", 
+                    marginBottom: "-10px", // Signature ko line ke thoda pas lane ke liye
+                    mixBlendMode: "multiply" // White background hatane ke liye agar zarurat ho
+                  }} 
+                />
+                <div style={{ borderTop: "1.5px solid #333", paddingTop: "5px" }}>
+                  <p style={{ margin: "0", fontSize: "10px", fontWeight: "black", textTransform: "uppercase" }}>Authorized Signatory</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Signature */}
-          <div style={{ marginTop: "50px", textAlign: "right" }}>
-            <img src="/sign.jpg" alt="Signature" style={{ width: "80px", height: "40px" }} />
-            <div style={{ borderTop: "1px solid #333", width: "160px", marginLeft: "auto", textAlign: "center", paddingTop: "5px" }}>
-              <p style={{ margin: "0", fontSize: "10px", fontWeight: "bold" }}>Authorized Signatory</p>
-            </div>
-          </div>
-
-          <p style={{ textAlign: "center", fontSize: "10px", color: "#94a3b8", marginTop: "40px" }}>
+          <p style={{ textAlign: "center", fontSize: "10px", color: "#94a3b8", marginTop: "60px" }}>
             This is a computer-generated document. No signature is required.
           </p>
         </div>
