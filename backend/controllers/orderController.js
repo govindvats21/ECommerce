@@ -128,27 +128,27 @@ export const updateOrderStatus = async (req, res) => {
     const { orderId, shopId } = req.params;
     const { status, riderId } = req.body;
 
-    // Order dhoondein
-    const order = await Order.findById(orderId).populate("user");
+    // 1. Order dhoondein aur data populate karein (Taaki frontend crash na ho)
+    const order = await Order.findById(orderId).populate("user shopOrders.shop shopOrders.owner");
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    // ✅ Match logic: String me convert karke hi check karein
     const shopOrder = order.shopOrders.find(
       (o) => String(o.shop?._id || o.shop) === String(shopId)
     );
 
     if (!shopOrder) {
-      return res.status(400).json({ message: "Shop details not found in this order" });
+      return res.status(400).json({ message: "Shop details not found" });
     }
 
     shopOrder.status = status;
 
-    // Delivery Boy Assignment Logic
+    // 2. Delivery Boy Assignment Logic
     if (status === "out of delivery") {
       if (!riderId) return res.status(400).json({ message: "Rider ID is required" });
       
       shopOrder.assignedDeliveryBoy = riderId;
 
+      // Assignment table mein entry
       await DeliveryAssignment.create({
         order: order._id,
         shop: shopOrder.shop,
@@ -159,13 +159,15 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // Deliver hone par time set karein
     if (status === "delivered") {
       shopOrder.deliveredAt = new Date();
     }
 
+    // 3. Save karne ke baad updated order bhejien
     await order.save();
-    res.status(200).json({ message: "Status Updated Successfully" });
+    
+    // Response mein success ke saath data bhej sakte hain (Optional but safe)
+    res.status(200).json({ message: "Status Updated Successfully", order });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
