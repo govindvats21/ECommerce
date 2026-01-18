@@ -128,7 +128,7 @@ export const updateOrderStatus = async (req, res) => {
     const { orderId, shopId } = req.params;
     const { status, riderId } = req.body;
 
-    // 1. Order find aur populate
+    // 1. Order find aur populate (initial fetch)
     const order = await Order.findById(orderId).populate("user shopOrders.shop shopOrders.owner");
     if (!order) return res.status(404).json({ message: "Order not found" });
 
@@ -145,6 +145,7 @@ export const updateOrderStatus = async (req, res) => {
       if (!riderId) return res.status(400).json({ message: "Rider ID required" });
       shopOrder.assignedDeliveryBoy = riderId;
 
+      // Delivery assignment create karein
       await DeliveryAssignment.create({
         order: order._id,
         shop: shopOrder.shop,
@@ -159,12 +160,23 @@ export const updateOrderStatus = async (req, res) => {
       shopOrder.deliveredAt = new Date();
     }
 
-    // 3. VERCEL SPECIAL: Save ke baad re-populate
+    // 3. Save order
     await order.save();
-    const finalOrder = await Order.findById(orderId).populate("user shopOrders.shop shopOrders.owner");
 
-    res.status(200).json({ message: "Success", order: finalOrder });
+    // 4. VERCEL SPECIAL: Deep Populate (Sab kuch wapas fetch karein rider details ke saath)
+    const finalOrder = await Order.findById(orderId)
+      .populate("user")
+      .populate("shopOrders.shop")
+      .populate("shopOrders.owner")
+      .populate({
+        path: "shopOrders.assignedDeliveryBoy",
+        select: "fullName mobile location" // Ye fields tracking page ke liye zaroori hain
+      })
+      .populate("shopOrders.shopOrderItems.item");
+
+    res.status(200).json({ message: "Status Updated Successfully", order: finalOrder });
   } catch (error) {
+    console.error("Order Update Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
