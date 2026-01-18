@@ -67,11 +67,23 @@ const TrackOrderPage = () => {
             
             {/* Shop Detail */}
             <div className="flex gap-4 items-center">
-              <img 
-                src={shopOrder?.shop?.logo || "https://via.placeholder.com/150"} 
-                className="w-14 h-14 rounded-lg border object-cover shadow-sm" 
-                alt="shop-logo" 
-              />
+             <img 
+  src={
+    shopOrder?.shop?.image 
+      ? (shopOrder.shop.image.startsWith("http") 
+          ? shopOrder.shop.image 
+          : `${serverURL}/${shopOrder.shop.image.replace(/\\/g, "/")}`)
+      : "https://via.placeholder.com/150" 
+  } 
+  className="w-16 h-16 rounded-xl border-2 border-gray-100 object-cover shadow-sm" 
+  alt={shopOrder?.shop?.name || "shop"} 
+  onError={(e) => { 
+    e.target.onerror = null; 
+    e.target.src = "https://via.placeholder.com/150"; 
+  }} 
+/>
+
+
               <div>
                 <h2 className="text-base font-bold text-gray-800">{shopOrder?.shop?.name || "Partner Shop"}</h2>
                 <p className="text-xs text-gray-500">{shopOrder?.shop?.city || "Location Updating..."}</p>
