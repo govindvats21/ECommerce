@@ -42,7 +42,7 @@ export default function ReceiptPage({ order }) {
 
       {/* Hidden PDF Section */}
       <div style={{ position: "absolute", top: "-9999px", left: "0" }}>
-        <div ref={invoiceRef} style={{ width: "790px", padding: "40px", backgroundColor: "#fff", color: "#333", fontFamily: "Arial, sans-serif" }}>
+        <div ref={invoiceRef} style={{ width: "790px", minHeight: "1050px", padding: "40px", backgroundColor: "#fff", color: "#333", fontFamily: "Arial, sans-serif", position: "relative" }}>
           
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "4px solid #1e40af", paddingBottom: "20px" }}>
@@ -107,15 +107,13 @@ export default function ReceiptPage({ order }) {
             </tbody>
           </table>
 
-          {/* Footer Summary & Signature */}
+          {/* Footer Summary Area */}
           <div style={{ marginTop: "40px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            {/* QR Code Section */}
             <div>
               <QRCode value={`Order:${order?._id}`} size={60} />
               <p style={{ fontSize: "9px", color: "#94a3b8", marginTop: "5px" }}>Official VATSTORE Invoice</p>
             </div>
 
-            {/* Price Calculations */}
             <div style={{ width: "250px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: "13px" }}>
                 <span>Subtotal:</span><span style={{ fontWeight: "bold" }}>₹{order?.totalAmount}</span>
@@ -128,28 +126,28 @@ export default function ReceiptPage({ order }) {
                 <span style={{ fontSize: "16px", fontWeight: "900", color: "#1e40af" }}>₹{finalTotal}</span>
               </div>
 
-              {/* ⭐ FIXED SIGNATURE SECTION (Right Aligned under Total) ⭐ */}
-              <div style={{ marginTop: "40px", textAlign: "center", width: "160px", marginLeft: "auto" }}>
+              {/* Signature Block - Right Side with more space */}
+              <div style={{ marginTop: "80px", textAlign: "center", width: "170px", marginLeft: "auto" }}>
                 <img 
                   src="/sign.jpg" 
                   alt="Signature" 
-                  style={{ 
-                    width: "100px", 
-                    height: "auto", 
-                    marginBottom: "-10px", // Signature ko line ke thoda pas lane ke liye
-                    mixBlendMode: "multiply" // White background hatane ke liye agar zarurat ho
-                  }} 
+                  style={{ width: "100px", height: "auto", marginBottom: "-8px", display: "block", marginLeft: "auto", marginRight: "auto" }} 
                 />
                 <div style={{ borderTop: "1.5px solid #333", paddingTop: "5px" }}>
-                  <p style={{ margin: "0", fontSize: "10px", fontWeight: "black", textTransform: "uppercase" }}>Authorized Signatory</p>
+                  <p style={{ margin: "0", fontSize: "11px", fontWeight: "bold", textTransform: "uppercase" }}>Authorized Signatory</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <p style={{ textAlign: "center", fontSize: "10px", color: "#94a3b8", marginTop: "60px" }}>
-            This is a computer-generated document. No signature is required.
-          </p>
+          {/* Computer Generated Line - Fixed at the very bottom */}
+          <div style={{ position: "absolute", bottom: "40px", left: "0", width: "100%", textAlign: "center" }}>
+            <div style={{ borderTop: "1px solid #e2e8f0", width: "80%", margin: "0 auto 10px auto" }}></div>
+            <p style={{ fontSize: "10px", color: "#94a3b8", margin: "0" }}>
+              This is a computer-generated document. No signature is required.
+            </p>
+          </div>
+
         </div>
       </div>
     </>
