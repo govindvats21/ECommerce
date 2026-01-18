@@ -107,7 +107,7 @@ const handlePlaceOrder = async () => {
         amount: res.data.razorOrder.amount,
         currency: "INR",
         name: "Vats Store",
-        description: "Food Delivery Payment",
+        description: "Product Delivery Payment",
         order_id: res.data.razorOrder.id,
         handler: async (response) => {
           try {
