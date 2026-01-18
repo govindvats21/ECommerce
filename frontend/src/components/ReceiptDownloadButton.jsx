@@ -88,7 +88,7 @@ export default function ReceiptPage({ order }) {
     const ownerData = so?.owner || {};
     
     // User Model mein 'mobile' hai, isliye ownerData.mobile check kar rahe hain
-    const sellerPhone = shopData?.mobile || ownerData?.mobile || "+91-XXXXXXXXXX";
+  
     const sellerEmail = shopData?.email || ownerData?.email || "support@vatsstore.com";
 
     return (
@@ -98,7 +98,6 @@ export default function ReceiptPage({ order }) {
         </p>
         <div style={{ margin: "4px 0", fontSize: "12px", color: "#475569", lineHeight: "1.4" }}>
           {sellerEmail}<br/>
-          <b style={{ color: "#000" }}>Ph: {sellerPhone}</b><br/>
           <div style={{ fontSize: "11px" }}>{shopData?.address || "Main Market, India"}</div>
         </div>
       </div>

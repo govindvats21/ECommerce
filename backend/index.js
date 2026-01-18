@@ -16,18 +16,24 @@ const port = process.env.PORT || 4000;
 
 app.set("trust proxy", 1);
 
-// Backend ko pata hona chahiye ki request kahan se aa rahi hai
-app.use(
-  cors({
+app.use(cors({
     origin: ["https://e-commerce-frontend-ecru-tau.vercel.app", "http://localhost:5173"],
     credentials: true,
-  })
-);
+}));
 
 app.use(express.json());
 app.use(cookieParser());
 
-connectDb();
+// --- VERCEL FIX: DB Connection Middleware ---
+// Har request par check karega ki DB connected hai ya nahi
+app.use(async (req, res, next) => {
+    try {
+        await connectDb();
+        next();
+    } catch (error) {
+        res.status(500).json({ message: "Database connection error" });
+    }
+});
 
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
@@ -36,14 +42,13 @@ app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 
 app.get("/", (req, res) => {
-  res.send("VatsEcommerce API is Running...");
+    res.send("VatsEcommerce API is Running...");
 });
 
-// Vercel ke liye server.listen ko production mein skip karna hota hai
 if (process.env.NODE_ENV !== "production") {
-  app.listen(port, () => {
-    console.log(`🚀 Server started at port ${port}`);
-  });
+    app.listen(port, () => {
+        console.log(`🚀 Server started at port ${port}`);
+    });
 }
 
 export default app;

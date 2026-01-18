@@ -37,7 +37,7 @@ import useGetupdateLocation from "./hooks/useGetUpdateLocation";
 axios.defaults.withCredentials = true;
 
 // 🔥 Filhal Localhost URL
-export const serverURL = "https://e-commerce-backend-one-inky.vercel.app";
+export const serverURL = "http://localhost:8000";
 
 // AXIOS INTERCEPTOR: Token management
 axios.interceptors.request.use((config) => {
