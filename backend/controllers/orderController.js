@@ -128,7 +128,7 @@ export const updateOrderStatus = async (req, res) => {
     const { orderId, shopId } = req.params;
     const { status, riderId } = req.body;
 
-    // 1. Order dhoondein aur data populate karein (Taaki frontend crash na ho)
+    // 1. Order find aur populate
     const order = await Order.findById(orderId).populate("user shopOrders.shop shopOrders.owner");
     if (!order) return res.status(404).json({ message: "Order not found" });
 
@@ -136,19 +136,15 @@ export const updateOrderStatus = async (req, res) => {
       (o) => String(o.shop?._id || o.shop) === String(shopId)
     );
 
-    if (!shopOrder) {
-      return res.status(400).json({ message: "Shop details not found" });
-    }
+    if (!shopOrder) return res.status(400).json({ message: "Shop not found" });
 
     shopOrder.status = status;
 
-    // 2. Delivery Boy Assignment Logic
+    // 2. Rider logic
     if (status === "out of delivery") {
-      if (!riderId) return res.status(400).json({ message: "Rider ID is required" });
-      
+      if (!riderId) return res.status(400).json({ message: "Rider ID required" });
       shopOrder.assignedDeliveryBoy = riderId;
 
-      // Assignment table mein entry
       await DeliveryAssignment.create({
         order: order._id,
         shop: shopOrder.shop,
@@ -163,11 +159,11 @@ export const updateOrderStatus = async (req, res) => {
       shopOrder.deliveredAt = new Date();
     }
 
-    // 3. Save karne ke baad updated order bhejien
+    // 3. VERCEL SPECIAL: Save ke baad re-populate
     await order.save();
-    
-    // Response mein success ke saath data bhej sakte hain (Optional but safe)
-    res.status(200).json({ message: "Status Updated Successfully", order });
+    const finalOrder = await Order.findById(orderId).populate("user shopOrders.shop shopOrders.owner");
+
+    res.status(200).json({ message: "Success", order: finalOrder });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
