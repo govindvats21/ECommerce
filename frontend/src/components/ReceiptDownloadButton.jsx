@@ -69,15 +69,31 @@ export default function ReceiptPage({ order }) {
               </p>
             </div>
 
-            <div style={{ width: "45%", textAlign: "right" }}>
-              <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Sold By</h4>
-              {order?.shopOrders?.map((so, idx) => (
-                <div key={idx} style={{ marginTop: "10px" }}>
-                  <p style={{ fontWeight: "bold", fontSize: "15px", margin: "0", color: "#1f2937" }}>{so?.shop?.name || "VatsStore Partner"}</p>
-                  <p style={{ fontSize: "12px", color: "#475569" }}>{so?.shop?.email || "support@vatsstore.com"}</p>
-                </div>
-              ))}
-            </div>
+         <div style={{ width: "45%", textAlign: "right" }}>
+  <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Sold By</h4>
+  {order?.shopOrders?.map((so, idx) => {
+    
+   
+ 
+    const displayEmail = so.owner?.email || so.shop?.email || "support@vatsstore.com";
+
+    return (
+      <div key={idx} style={{ marginTop: "10px" }}>
+        <p style={{ fontWeight: "bold", fontSize: "15px", margin: "0", color: "#1f2937" }}>
+          {so.shop?.name || "VatsStore Partner"}
+        </p>
+        <div style={{ margin: "4px 0", fontSize: "12px", color: "#475569", lineHeight: "1.4" }}>
+          {displayEmail}<br/>
+         
+          <div style={{ fontSize: "11px" }}>{so.shop?.address || "Registered Address"}</div>
+        </div>
+      </div>
+    );
+  })}
+</div>
+
+
+
           </div>
 
           {/* Items Table */}
