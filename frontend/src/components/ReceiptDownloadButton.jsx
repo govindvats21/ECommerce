@@ -6,7 +6,7 @@ import { serverURL } from "../App";
 export default function ReceiptPage({ order }) {
   const invoiceRef = useRef();
 
-  // Price Calculations
+  // Price Calculations (Delivery fee logic)
   const shippingFee = order?.totalAmount > 500 ? 0 : 40;
   const finalTotal = (order?.totalAmount || 0) + shippingFee;
 
@@ -26,7 +26,7 @@ export default function ReceiptPage({ order }) {
 
   return (
     <>
-      {/* UI Button Section */}
+      {/* UI Button Section - Iska design nahi badla gaya */}
       <div className="flex flex-col items-center justify-center p-10 bg-white shadow-xl rounded-3xl max-w-md mx-auto mt-10 border border-gray-100">
         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 text-blue-600">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -42,7 +42,7 @@ export default function ReceiptPage({ order }) {
 
       {/* Hidden PDF Section */}
       <div style={{ position: "absolute", top: "-9999px", left: "0" }}>
-        <div ref={invoiceRef} style={{ width: "790px", minHeight: "1050px", padding: "40px", backgroundColor: "#fff", color: "#333", fontFamily: "Arial, sans-serif", position: "relative" }}>
+        <div ref={invoiceRef} style={{ width: "790px", minHeight: "1000px", padding: "40px", backgroundColor: "#fff", color: "#333", fontFamily: "Arial, sans-serif", position: "relative" }}>
           
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "4px solid #1e40af", paddingBottom: "20px" }}>
@@ -59,6 +59,7 @@ export default function ReceiptPage({ order }) {
 
           {/* Customer & Seller Section */}
           <div style={{ display: "flex", justifyContent: "space-between", margin: "30px 0", gap: "20px" }}>
+            {/* Billed To */}
             <div style={{ width: "45%" }}>
               <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Billed To</h4>
               <p style={{ fontWeight: "bold", fontSize: "15px", margin: "10px 0 5px" }}>{order?.deliveryAddress?.fullName || order?.user?.fullName}</p>
@@ -69,31 +70,22 @@ export default function ReceiptPage({ order }) {
               </p>
             </div>
 
-         <div style={{ width: "45%", textAlign: "right" }}>
-  <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Sold By</h4>
-  {order?.shopOrders?.map((so, idx) => {
-    
-   
- 
-    const displayEmail = so.owner?.email || so.shop?.email || "support@vatsstore.com";
+            {/* Sold By - Fixed Email Logic */}
+            <div style={{ width: "45%", textAlign: "right" }}>
+              <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Sold By</h4>
+              {order?.shopOrders?.map((so, idx) => {
+                // Backend schema ke hisab se email check
+                const sellerEmail = so?.shop?.email || so?.owner?.email || "support@vatsstore.com";
+                const sellerName = so?.shop?.name || "VatsStore Partner";
 
-    return (
-      <div key={idx} style={{ marginTop: "10px" }}>
-        <p style={{ fontWeight: "bold", fontSize: "15px", margin: "0", color: "#1f2937" }}>
-          {so.shop?.name || "VatsStore Partner"}
-        </p>
-        <div style={{ margin: "4px 0", fontSize: "12px", color: "#475569", lineHeight: "1.4" }}>
-          {displayEmail}<br/>
-         
-          <div style={{ fontSize: "11px" }}>{so.shop?.address || "Registered Address"}</div>
-        </div>
-      </div>
-    );
-  })}
-</div>
-
-
-
+                return (
+                  <div key={idx} style={{ marginTop: "10px" }}>
+                    <p style={{ fontWeight: "bold", fontSize: "15px", margin: "0", color: "#1f2937" }}>{sellerName}</p>
+                    <p style={{ fontSize: "12px", color: "#475569", margin: "2px 0" }}>{sellerEmail}</p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Items Table */}
@@ -123,7 +115,7 @@ export default function ReceiptPage({ order }) {
             </tbody>
           </table>
 
-          {/* Footer Summary Area */}
+          {/* Summary & Signature */}
           <div style={{ marginTop: "40px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <QRCode value={`Order:${order?._id}`} size={60} />
@@ -142,23 +134,23 @@ export default function ReceiptPage({ order }) {
                 <span style={{ fontSize: "16px", fontWeight: "900", color: "#1e40af" }}>₹{finalTotal}</span>
               </div>
 
-              {/* Signature Block - Right Side with more space */}
-              <div style={{ marginTop: "80px", textAlign: "center", width: "170px", marginLeft: "auto" }}>
+              {/* ⭐ FIXED SIGNATURE SECTION ⭐ */}
+              <div style={{ marginTop: "70px", textAlign: "center", width: "170px", marginLeft: "auto" }}>
                 <img 
                   src="/sign.jpg" 
                   alt="Signature" 
-                  style={{ width: "100px", height: "auto", marginBottom: "-8px", display: "block", marginLeft: "auto", marginRight: "auto" }} 
+                  style={{ width: "90px", height: "auto", marginBottom: "-8px", display: "block", marginLeft: "auto", marginRight: "auto" }} 
                 />
                 <div style={{ borderTop: "1.5px solid #333", paddingTop: "5px" }}>
-                  <p style={{ margin: "0", fontSize: "11px", fontWeight: "bold", textTransform: "uppercase" }}>Authorized Signatory</p>
+                  <p style={{ margin: "0", fontSize: "10px", fontWeight: "bold", textTransform: "uppercase" }}>Authorized Signatory</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Computer Generated Line - Fixed at the very bottom */}
+          {/* ⭐ COMPUTER GENERATED LINE - Fixed Bottom ⭐ */}
           <div style={{ position: "absolute", bottom: "40px", left: "0", width: "100%", textAlign: "center" }}>
-            <div style={{ borderTop: "1px solid #e2e8f0", width: "80%", margin: "0 auto 10px auto" }}></div>
+            <div style={{ borderTop: "1px solid #f1f5f9", width: "90%", margin: "0 auto 10px auto" }}></div>
             <p style={{ fontSize: "10px", color: "#94a3b8", margin: "0" }}>
               This is a computer-generated document. No signature is required.
             </p>
