@@ -1,147 +1,138 @@
-import axios from 'axios';
-import React, { useState, useEffect } from 'react';
-import { MdKeyboardBackspace } from 'react-icons/md';
-import { useNavigate, useParams } from 'react-router-dom';
-import { serverURL } from '../App';
-import DeliveryBoyTracking from '../components/DeliveryBoyTracking';
-import OrderProgressBar from '../components/OrderProgressBar';
-import Footer from '../components/Footer';
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { serverURL } from "../App";
+import ReceiptDownloadButton from "./ReceiptDownloadButton";
 
-const TrackOrderPage = () => {
+const UserOrderCard = ({ data }) => {
   const navigate = useNavigate();
-  const { orderId } = useParams();
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  const handleGetOrder = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`${serverURL}/api/order/get-order-by-id/${orderId}`, {
-        withCredentials: true,
-      });
-      setOrder(res.data);
-    } catch (error) {
-      console.error("Tracking Error:", error);
-    } finally {
-      setLoading(false);
-    }
+  const dateFormat = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
-  useEffect(() => {
-    if (orderId) handleGetOrder();
-  }, [orderId]);
+  // --- Image Logic Fix ---
+  const getImageUrl = (item) => {
+    // 1. Pehle direct item.images check karein (Jo order mein save hua)
+    // 2. Phir item.item.images check karein (Jo populate hokar aaya)
+    const path = 
+      (item?.images && item.images.length > 0 ? item.images[0] : null) || 
+      (item?.item?.images && item.item.images.length > 0 ? item.item.images[0] : null);
 
-  // Guard 1: Jab tak data fetch ho raha hai (No Blank Page)
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-[#ff4d2d] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500 font-bold text-sm">Tracking Info Loading...</p>
-        </div>
-      </div>
-    );
-  }
+    if (!path) return "https://via.placeholder.com/150?text=No+Image";
 
-  // Guard 2: Agar data nahi mila (No Blank Page)
-  if (!order || !order.shopOrders) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center text-center p-6">
-        <p className="text-gray-500 mb-4">Order details nahi mil payein.</p>
-        <button onClick={() => navigate("/")} className="bg-[#ff4d2d] text-white px-6 py-2 rounded-lg">Go Back</button>
-      </div>
-    );
-  }
+    if (path.startsWith("http")) return path;
+
+    // Backend static folder ke liye path fix
+    const cleanPath = path.replace(/\\/g, "/");
+    return `${serverURL}/${cleanPath}`;
+  };
 
   return (
-    <>
-      <div className="max-w-5xl mx-auto p-4 flex flex-col gap-6 min-h-screen">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-2 border-b pb-3 sticky top-0 bg-white z-50">
-          <div onClick={() => navigate("/")} className="cursor-pointer bg-gray-100 p-2 rounded-full">
-            <MdKeyboardBackspace className="w-6 h-6 text-[#ff4d2d]" />
-          </div>
-          <h1 className="text-xl font-bold text-gray-800">Track Order</h1>
+    <div className="bg-white rounded-xl shadow-lg p-6 space-y-6 border border-gray-100 hover:shadow-xl transition duration-200">
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800">
+            Order #{data?._id.slice(-6)}
+          </h2>
+          <p className="text-sm text-gray-500">
+            Placed on: {dateFormat(data?.createdAt)}
+          </p>
+          <span className="mt-1 inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+            {data.paymentMethod?.toUpperCase()}
+          </span>
         </div>
-
-        {order.shopOrders.map((shopOrder, index) => (
-          <div key={index} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-            
-            {/* Shop Detail */}
-            <div className="flex gap-4 items-center">
-              <img 
-                src={shopOrder?.shop?.logo || "https://via.placeholder.com/150"} 
-                className="w-14 h-14 rounded-lg border object-cover" 
-                alt="" 
-              />
-              <div>
-                <h2 className="text-base font-bold text-gray-800">{shopOrder?.shop?.name || "Partner Shop"}</h2>
-                <p className="text-xs text-gray-500">{shopOrder?.shop?.city || "Update ho raha hai..."}</p>
-              </div>
-            </div>
-
-            {/* Address Guard - Sabse bada crash point */}
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-              <p className="text-[11px] uppercase font-bold text-gray-400 mb-1">Delivery To:</p>
-              <div className="text-sm text-gray-700 leading-relaxed">
-                {typeof order.deliveryAddress === 'object' ? (
-                  <span className="font-medium">
-                    {order.deliveryAddress?.flatNo}, {order.deliveryAddress?.area}, <br />
-                    {order.deliveryAddress?.city}, {order.deliveryAddress?.pincode}
-                  </span>
-                ) : (
-                  <span className="font-medium">{order.deliveryAddress || "N/A"}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <OrderProgressBar status={shopOrder?.status || "pending"} />
-
-            {/* Rider Status */}
-            {shopOrder?.status !== "delivered" ? (
-              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                <p className="text-sm font-bold text-blue-800 mb-2">Status: {shopOrder?.status || "Processing"}</p>
-                {shopOrder?.assignedDeliveryBoy ? (
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase">Delivery Boy</p>
-                      <p className="text-sm font-bold text-gray-800">{shopOrder.assignedDeliveryBoy?.fullName}</p>
-                    </div>
-                    <a href={`tel:${shopOrder.assignedDeliveryBoy?.mobile}`} className="bg-white text-blue-600 px-4 py-1 rounded-full text-xs font-bold border border-blue-200 shadow-sm">📞 Call</a>
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-500 italic">Assigning rider soon...</p>
-                )}
-              </div>
-            ) : (
-              <div className="bg-green-50 p-3 rounded-lg text-center border border-green-100 font-bold text-green-700 text-sm">✅ Delivered Successfully</div>
-            )}
-
-            {/* Live Map Safety Check */}
-            {shopOrder?.assignedDeliveryBoy?.location?.coordinates && shopOrder.status === "out of delivery" && (
-              <div className="mt-4">
-                <h3 className="text-sm font-bold text-gray-800 mb-3 text-center uppercase tracking-widest">Live Tracking</h3>
-                <div className="h-[300px] rounded-2xl overflow-hidden border-2 border-white shadow-lg">
-                  <DeliveryBoyTracking data={{
-                    deliveryBoyLocation: { 
-                      lat: shopOrder.assignedDeliveryBoy.location.coordinates[1], 
-                      lon: shopOrder.assignedDeliveryBoy.location.coordinates[0] 
-                    },
-                    customerLocation: { 
-                      lat: order?.deliveryAddress?.latitude || 0, 
-                      lon: order?.deliveryAddress?.longitude || 0 
-                    },
-                  }} />
-                </div>
-              </div>
-            )}
+        <div className="text-right">
+          <div className="text-sm font-semibold text-blue-600 capitalize">
+            {data.shopOrders?.[0]?.status}
           </div>
-        ))}
+        </div>
       </div>
-      <Footer />
-    </>
+
+      {/* Shop Orders */}
+      {data.shopOrders?.map((shopOrder, idx) => (
+        <div
+          key={idx}
+          className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200"
+        >
+          {/* Shop Name & Logo */}
+          {shopOrder?.shop?.name && (
+            <div className="flex items-center gap-2 mb-2">
+              {shopOrder.shop?.logo && (
+                <img
+                  src={shopOrder.shop.logo.startsWith('http') ? shopOrder.shop.logo : `${serverURL}/${shopOrder.shop.logo.replace(/\\/g, "/")}`}
+                  alt={shopOrder.shop.name}
+                  className="w-6 h-6 object-contain rounded-full"
+                />
+              )}
+              <span className="font-semibold text-gray-700">
+                {shopOrder?.shop.name}
+              </span>
+            </div>
+          )}
+
+          {/* Items Horizontal Scroll */}
+          <div className="flex space-x-4 overflow-x-auto pb-1">
+            {shopOrder.shopOrderItems.map((item, index) => (
+              <div
+                key={index}
+                className="w-36 shrink-0 rounded-lg bg-white shadow-sm p-2 hover:shadow-md transition cursor-pointer"
+              >
+                <img
+                  src={getImageUrl(item)} // FIX: Naya function use kiya
+                  alt={item?.name}
+                  className="w-full h-24 object-cover rounded-md"
+                  onError={(e) => (e.target.src = "https://via.placeholder.com/150")}
+                />
+                <p className="text-sm font-medium mt-2 truncate">{item.name}</p>
+                <p className="text-xs text-gray-500">
+                  Qty: {item.quantity} × ₹{item.price}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Subtotal + Status */}
+          <div className="flex justify-between items-center text-sm text-gray-700">
+            <p>Subtotal: ₹{shopOrder.subTotal}</p>
+            <span className="font-medium text-blue-600 capitalize">
+              {shopOrder.status}
+            </span>
+          </div>
+        </div>
+      ))}
+
+      {data.shopOrders?.[0]?.status === "delivered" && (
+        <ReceiptDownloadButton order={data} />
+      )}
+
+      {/* Footer */}
+      <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+        <p className="text-base font-semibold text-gray-800">
+          Total: ₹{data?.totalAmount}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate(`/track-order/${data._id}`)}
+            className="bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-md text-sm font-medium transition shadow"
+          >
+            Track Order
+          </button>
+          <button
+            onClick={() => navigate(`/reorder/${data._id}`)}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition shadow"
+          >
+            Reorder
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default TrackOrderPage;
+export default UserOrderCard;
