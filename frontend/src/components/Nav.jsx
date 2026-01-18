@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { FaLocationDot, FaPlus } from "react-icons/fa6";
+import { FaLocationDot, FaPlus, FaTruckFast } from "react-icons/fa6"; // Added Delivery Icon
 import { IoIosSearch } from "react-icons/io";
-import { FiShoppingCart, FiUser } from "react-icons/fi";
-import { RxCross2 } from "react-icons/rx";
+import { FiShoppingCart } from "react-icons/fi";
 import { TbReceipt2 } from "react-icons/tb";
 import { useDispatch, useSelector } from 'react-redux';
 import { setSearchItems, setUserData } from '../redux/userSlice';
@@ -13,17 +12,13 @@ import { serverURL } from '../App';
 const Nav = () => {
   const { userData, userCity, cartItems } = useSelector((state) => state.user)
   const navigate = useNavigate()
-  const location = useLocation()
   const dispatch = useDispatch()
   
   const [showInfo, setShowInfo] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState("");
 
-  // Ecommerce Only Theme (Blue)
-  const themeColor = "blue-600";
-  const themeBg = "bg-blue-600";
   const themeText = "text-blue-600";
+  const themeBg = "bg-blue-600";
   const themeBorder = "border-blue-200";
 
   const handleLogout = async () => {
@@ -75,10 +70,10 @@ const Nav = () => {
           </span>
         </div>
 
-        {/* Search Bar (Visible for Users and Guests) */}
+        {/* Search Bar - ONLY for User or Guests */}
         {(!userData || userData?.role === "user") && (
           <div className="hidden md:flex items-center flex-1 max-w-[500px] mx-8">
-            <div className={`flex items-center w-full bg-gray-50 border-2 border-transparent focus-within:border-${themeColor} focus-within:bg-white rounded-2xl h-[45px] transition-all px-4 gap-3`}>
+            <div className={`flex items-center w-full bg-gray-50 border-2 border-transparent focus-within:border-blue-600 focus-within:bg-white rounded-2xl h-[45px] transition-all px-4 gap-3`}>
                 <div className="flex items-center border-r pr-3 border-gray-200 min-w-[120px]">
                     <FaLocationDot className={themeText} size={14} />
                     <span className="text-gray-600 truncate text-xs font-bold ml-1">
@@ -100,11 +95,12 @@ const Nav = () => {
         {/* Right Actions */}
         <div className="flex items-center gap-3 md:gap-6">
           
-          {/* Cart & Shop Links (For Users/Guests) */}
+          {/* USER & GUEST LINKS - (All Products yahan se remove kar diya gaya hai for non-users) */}
           {(!userData || userData?.role === "user") && (
             <>
               <nav className="hidden lg:flex items-center gap-6 mr-2">
                  <button onClick={() => navigate("/home")} className="text-xs font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 transition">Home</button>
+                 {/* Only Users can see All Products */}
                 <button onClick={() => navigate("/all-products")} className="text-xs font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 transition">Shop All</button>
               </nav>
               <div className="relative cursor-pointer group" onClick={() => navigate("/cart")}>
@@ -120,7 +116,7 @@ const Nav = () => {
             </>
           )}
 
-          {/* Owner Actions */}
+          {/* OWNER ACTIONS - (No All Products) */}
           {userData?.role === "owner" && (
             <div className="flex items-center gap-2">
                 <button className={`flex items-center gap-2 px-4 py-2 rounded-xl ${themeBg} text-white text-xs font-bold shadow-md hover:opacity-90 transition-all`} onClick={() => navigate("/add-item")}>
@@ -128,6 +124,15 @@ const Nav = () => {
                 </button>
                 <button className={`p-2 rounded-xl border-2 ${themeBorder} ${themeText}`} onClick={() => navigate("/my-orders")}>
                     <TbReceipt2 size={20} />
+                </button>
+            </div>
+          )}
+
+          {/* DELIVERY BOY ACTIONS - (No All Products) */}
+          {userData?.role === "delivery" && (
+            <div className="flex items-center gap-2">
+                <button className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold shadow-md hover:opacity-90 transition-all`} onClick={() => navigate("/delivery-dashboard")}>
+                    <FaTruckFast size={16} /> <span className="hidden sm:block">Deliveries</span>
                 </button>
             </div>
           )}
@@ -157,9 +162,17 @@ const Nav = () => {
                     <p className="text-sm font-bold text-gray-800 truncate">{userData?.fullName}</p>
                 </div>
                 <hr className="mb-2 border-gray-50" />
-                     <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors" onClick={() => {navigate("/home"); setShowInfo(false)}}>Home</button>
-                       <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors" onClick={() => {navigate("/all-products"); setShowInfo(false)}}>All Products</button>
-                <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors" onClick={() => {navigate("/my-orders"); setShowInfo(false)}}>My Orders</button>
+                
+                {/* Profile Dropdown Logic: Hidden "All Products" for Owner/Delivery */}
+                <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors" onClick={() => {navigate("/"); setShowInfo(false)}}>Dashboard</button>
+                
+                {userData.role === "user" && (
+                   <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors" onClick={() => {navigate("/all-products"); setShowInfo(false)}}>Shop All</button>
+                )}
+
+                <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors" onClick={() => {navigate("/my-orders"); setShowInfo(false)}}>
+                  {userData.role === "delivery" ? "My Tasks" : "My Orders"}
+                </button>
 
                 <button className="w-full text-left px-3 py-2 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors mt-1" onClick={handleLogout}>Log Out</button>
               </div>

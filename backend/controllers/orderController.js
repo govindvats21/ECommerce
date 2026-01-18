@@ -342,11 +342,19 @@ export const getTodayDeliveries = async (req, res) => {
     let count = 0;
     orders.forEach(o => {
       o.shopOrders.forEach(so => {
-        if(String(so.assignedDeliveryBoy) === String(req.userId) && so.status === 'delivered') count++;
+        // Sirf wahi shopOrder count karein jo is delivery boy ka hai aur delivered hai
+        if(String(so.assignedDeliveryBoy) === String(req.userId) && so.status === 'delivered') {
+          count++;
+        }
       });
     });
 
-    res.status(200).json([{ hour: new Date().getHours(), count }]);
+    // Seedha count aur total earnings bhej rahe hain
+    res.status(200).json({ 
+      count: count, 
+      earnings: count * 50,
+      hour: new Date().getHours() 
+    });
   } catch (error) {
     return res.status(500).json({ message: "Today deliveries error" });
   }
