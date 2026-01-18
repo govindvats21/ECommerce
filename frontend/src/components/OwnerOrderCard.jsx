@@ -2,13 +2,12 @@ import React, { useState, useEffect } from "react";
 import { MdLocationOn, MdDirectionsBike } from "react-icons/md";
 import { serverURL } from "../App";
 import axios from "axios";
-import { useDispatch } from "react-redux";
 
 const OwnerOrderCard = ({ data }) => {
-  const dispatch = useDispatch();
   const [riders, setRiders] = useState([]);
   const [selectedRider, setSelectedRider] = useState("");
 
+  // Riders Load karne ke liye
   useEffect(() => {
     const fetchRiders = async () => {
       try {
@@ -21,16 +20,19 @@ const OwnerOrderCard = ({ data }) => {
     fetchRiders();
   }, []);
 
+  // ✅ Image Path Fix (Array se pehli image nikalne ke liye)
   const getImageUrl = (item) => {
-    const path = item?.images?.[0] || item?.item?.images?.[0] || item?.item?.image1;
+    const path = item?.images?.[0] || item?.item?.images?.[0];
     if (!path) return "https://placehold.co/400x400?text=No+Image";
     return path.startsWith("http") ? path : `${serverURL}/${path.replace(/\\/g, "/")}`;
   };
 
+  // ✅ Status Update Logic (ShopId fix ke saath)
   const handleUpdateStatus = async (newStatus) => {
     try {
       const orderId = data._id;
-      const shopId = data.shopOrders?.shop?._id || data.shopOrders?.shop;
+      // Database mein shopOrders ek array hai, isliye [0] se ID nikal rahe hain
+      const shopId = data.shopOrders?.[0]?.shop?._id || data.shopOrders?.[0]?.shop;
 
       if (newStatus === "out of delivery" && !selectedRider) {
         alert("Pehle Delivery Boy assign karein!");
@@ -53,8 +55,9 @@ const OwnerOrderCard = ({ data }) => {
     }
   };
 
-  // --- ADDRESS LOGIC FIX ---
-  // Agar 'text' empty hai toh individual fields ko join karke dikhao
+  // Helper: Puraane code ki tarah bar-bar [0] na likhna pade
+  const currentShopOrder = data?.shopOrders?.[0];
+
   const displayAddress = data?.deliveryAddress?.text || 
     `${data?.deliveryAddress?.flatNo || ""}, ${data?.deliveryAddress?.area || ""}, ${data?.deliveryAddress?.landmark || ""}, ${data?.deliveryAddress?.city || ""}`.replace(/^, |, $/g, '');
 
@@ -66,19 +69,18 @@ const OwnerOrderCard = ({ data }) => {
           <p className="text-[10px] text-gray-400 font-bold tracking-widest">ORDER ID: #{data._id?.slice(-6).toUpperCase()}</p>
         </div>
         <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase ${
-          data?.shopOrders?.status === 'delivered' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-[#ff4d2d]'
+          currentShopOrder?.status === 'delivered' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-[#ff4d2d]'
         }`}>
-          {data?.shopOrders?.status || "Pending"}
+          {currentShopOrder?.status || "Pending"}
         </span>
       </div>
 
-      {/* FIXED ADDRESS UI */}
       <div className="bg-gray-50 p-4 rounded-3xl mb-6 flex gap-3 border border-dashed border-gray-300">
         <MdLocationOn className="text-[#ff4d2d] shrink-0" size={18} />
         <div>
            <p className="text-xs font-black text-gray-800 uppercase mb-1">Delivery Address:</p>
            <p className="text-[11px] font-bold text-gray-500 italic leading-relaxed">
-             {displayAddress || "Address detail missing"}
+             {displayAddress}
            </p>
            {data?.deliveryAddress?.phone && (
              <p className="text-[10px] font-black text-blue-600 mt-2">📞 {data.deliveryAddress.phone}</p>
@@ -87,19 +89,19 @@ const OwnerOrderCard = ({ data }) => {
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-        {data?.shopOrders?.shopOrderItems?.map((item, index) => (
+        {currentShopOrder?.shopOrderItems?.map((item, index) => (
           <div key={index} className="w-24 shrink-0 group">
             <div className="h-24 w-24 rounded-2xl overflow-hidden bg-gray-100 shadow-sm border border-transparent group-hover:border-orange-500 transition-all">
               <img src={getImageUrl(item)} alt="" className="w-full h-full object-cover" />
             </div>
-            <p className="text-[9px] font-black mt-2 truncate text-center uppercase text-gray-700">{item.name || item.item?.name}</p>
+            <p className="text-[9px] font-black mt-2 truncate text-center uppercase text-gray-700">{item.name}</p>
             <p className="text-[8px] text-center font-bold text-gray-400">Qty: {item.quantity}</p>
           </div>
         ))}
       </div>
 
       <div className="pt-6 border-t mt-4 space-y-4">
-        {data?.shopOrders?.status !== "delivered" && (
+        {currentShopOrder?.status !== "delivered" && (
           <div className="flex flex-col gap-2">
             <label className="text-[10px] font-black text-gray-400 uppercase flex items-center gap-1">
               <MdDirectionsBike size={14} className="text-blue-500" /> Assign Delivery Boy
@@ -111,9 +113,7 @@ const OwnerOrderCard = ({ data }) => {
             >
               <option value="">-- Choose available rider --</option>
               {riders.map((boy) => (
-                <option key={boy._id} value={boy._id}>
-                  {boy.fullName}
-                </option>
+                <option key={boy._id} value={boy._id}>{boy.fullName}</option>
               ))}
             </select>
           </div>
@@ -122,14 +122,14 @@ const OwnerOrderCard = ({ data }) => {
         <div className="flex justify-between items-center pt-2">
           <div>
             <span className="text-[10px] block font-black text-gray-400 uppercase">Total Amount</span>
-            <span className="text-2xl font-black text-gray-900">₹{data?.shopOrders?.subTotal || data?.totalAmount}</span>
+            <span className="text-2xl font-black text-gray-900">₹{currentShopOrder?.subTotal || data?.totalAmount}</span>
           </div>
           
           <div className="flex flex-col items-end gap-1">
              <span className="text-[10px] font-black text-gray-400 uppercase">Update Progress</span>
              <select
                 className="bg-black text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase outline-none hover:bg-gray-800 transition-colors cursor-pointer"
-                value={data?.shopOrders?.status}
+                value={currentShopOrder?.status}
                 onChange={(e) => handleUpdateStatus(e.target.value)}
               >
                 <option value="pending">Pending</option>

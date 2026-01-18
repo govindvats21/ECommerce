@@ -1,16 +1,15 @@
 import React, { useRef } from "react";
 import html2pdf from "html2pdf.js";
 import QRCode from "react-qr-code";
-import { serverURL } from "../App"; // Ensure serverURL is correct
+import { serverURL } from "../App"; 
 
 export default function ReceiptPage({ order }) {
   const invoiceRef = useRef();
 
-  // Calculations
+  // Price Calculations
   const shippingFee = order?.totalAmount > 500 ? 0 : 40;
   const finalTotal = (order?.totalAmount || 0) + shippingFee;
 
-  // PDF Download Logic
   const generatePDF = () => {
     const element = invoiceRef.current;
     const opt = {
@@ -36,20 +35,16 @@ export default function ReceiptPage({ order }) {
         </div>
         <h2 className="text-xl font-black text-gray-800">Order Placed!</h2>
         <p className="text-gray-500 text-sm mb-6 text-center">Aapka bill taiyar hai. Niche click karke download karein.</p>
-        
-        <button
-          onClick={generatePDF}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all"
-        >
+        <button onClick={generatePDF} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all">
           Download Invoice PDF
         </button>
       </div>
 
-      {/* Hidden PDF Content Section */}
+      {/* Hidden PDF Section */}
       <div style={{ position: "absolute", top: "-9999px", left: "0" }}>
         <div ref={invoiceRef} style={{ width: "790px", padding: "40px", backgroundColor: "#fff", color: "#333", fontFamily: "Arial, sans-serif" }}>
           
-          {/* 1. Header Section */}
+          {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "4px solid #1e40af", paddingBottom: "20px" }}>
             <div>
               <h1 style={{ fontSize: "32px", fontWeight: "900", color: "#1e40af", margin: "0" }}>VATSTORE</h1>
@@ -62,110 +57,114 @@ export default function ReceiptPage({ order }) {
             </div>
           </div>
 
-          {/* 2. Billing & Shipping Info */}
-          <div style={{ display: "flex", justifyContent: "space-between", margin: "30px 0" }}>
-            <div style={{ width: "50%" }}>
-              <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "12px", textTransform: "uppercase" }}>Shipping Address</h4>
-              <p style={{ fontWeight: "bold", fontSize: "15px", margin: "10px 0 5px" }}>{order?.user?.fullName}</p>
-              <p style={{ margin: "0", fontSize: "13px", lineHeight: "1.6", color: "#475569" }}>
+          {/* Customer & Seller Section */}
+          <div style={{ display: "flex", justifyContent: "space-between", margin: "30px 0", gap: "20px" }}>
+            
+            {/* Left Side: Billed To (Customer) */}
+            <div style={{ width: "45%" }}>
+              <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Billed To</h4>
+              <p style={{ fontWeight: "bold", fontSize: "15px", margin: "10px 0 5px" }}>{order?.deliveryAddress?.fullName || order?.user?.fullName}</p>
+              <p style={{ margin: "0", fontSize: "12px", lineHeight: "1.5", color: "#475569" }}>
                 {order?.deliveryAddress?.flatNo}, {order?.deliveryAddress?.area}<br/>
                 {order?.deliveryAddress?.city}, {order?.deliveryAddress?.state} - {order?.deliveryAddress?.pincode}<br/>
-                <b>Mobile: {order?.deliveryAddress?.phone || order?.user?.mobileNumber}</b>
+                <b>Mobile: {order?.deliveryAddress?.phone}</b>
               </p>
+
+              <div style={{ marginTop: "20px" }}>
+                <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Payment Info</h4>
+                <p style={{ margin: "8px 0 0", fontSize: "12px" }}>Method: <b>{order?.paymentMethod?.toUpperCase()}</b></p>
+                <p style={{ margin: "3px 0", fontSize: "12px" }}>Status: <span style={{ color: "#16a34a", fontWeight: "bold" }}>PAID</span></p>
+              </div>
             </div>
-            <div style={{ width: "40%", textAlign: "right" }}>
-              <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "12px", textTransform: "uppercase" }}>Payment Info</h4>
-              <p style={{ margin: "10px 0 5px", fontSize: "14px" }}>Method: <b>{order?.paymentMethod?.toUpperCase()}</b></p>
-              <p style={{ margin: "0", fontSize: "14px" }}>Status: <span style={{ color: "#16a34a", fontWeight: "bold" }}>PAID</span></p>
-            </div>
+
+            {/* Right Side: Sold By (Seller/Shop) */}
+
+<div style={{ width: "45%", textAlign: "right" }}>
+  <h4 style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "5px", color: "#1e40af", fontSize: "11px", textTransform: "uppercase", fontWeight: "bold" }}>Sold By</h4>
+  {order?.shopOrders?.map((so, idx) => {
+    
+    // Yahan hum data ki safety check kar rahe hain
+    const shopData = so?.shop || {};
+    const ownerData = so?.owner || {};
+    
+    // User Model mein 'mobile' hai, isliye ownerData.mobile check kar rahe hain
+    const sellerPhone = shopData?.mobile || ownerData?.mobile || "+91-XXXXXXXXXX";
+    const sellerEmail = shopData?.email || ownerData?.email || "support@vatsstore.com";
+
+    return (
+      <div key={idx} style={{ marginTop: "10px" }}>
+        <p style={{ fontWeight: "bold", fontSize: "15px", margin: "0", color: "#1f2937" }}>
+          {shopData.name || "VatsStore Partner"}
+        </p>
+        <div style={{ margin: "4px 0", fontSize: "12px", color: "#475569", lineHeight: "1.4" }}>
+          {sellerEmail}<br/>
+          <b style={{ color: "#000" }}>Ph: {sellerPhone}</b><br/>
+          <div style={{ fontSize: "11px" }}>{shopData?.address || "Main Market, India"}</div>
+        </div>
+      </div>
+    );
+  })}
+</div>
           </div>
 
-          {/* 3. Items Table */}
-          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px" }}>
+          {/* Items Table */}
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ backgroundColor: "#f8fafc", textAlign: "left" }}>
-                <th style={{ padding: "12px", borderBottom: "2px solid #cbd5e1", fontSize: "13px" }}>Item Details</th>
-                <th style={{ padding: "12px", borderBottom: "2px solid #cbd5e1", textAlign: "center", fontSize: "13px" }}>Qty</th>
-                <th style={{ padding: "12px", borderBottom: "2px solid #cbd5e1", textAlign: "right", fontSize: "13px" }}>Price</th>
-                <th style={{ padding: "12px", borderBottom: "2px solid #cbd5e1", textAlign: "right", fontSize: "13px" }}>Total</th>
+                <th style={{ padding: "12px", borderBottom: "2px solid #cbd5e1", fontSize: "12px" }}>Item Details</th>
+                <th style={{ padding: "12px", borderBottom: "2px solid #cbd5e1", textAlign: "center", fontSize: "12px" }}>Qty</th>
+                <th style={{ padding: "12px", borderBottom: "2px solid #cbd5e1", textAlign: "right", fontSize: "12px" }}>Price</th>
+                <th style={{ padding: "12px", borderBottom: "2px solid #cbd5e1", textAlign: "right", fontSize: "12px" }}>Total</th>
               </tr>
             </thead>
             <tbody>
-              {order?.shopOrders?.map((shopOrder, sIdx) => (
-                <React.Fragment key={sIdx}>
-                  {/* Shop Info Row */}
-                  <tr>
-                    <td colSpan="4" style={{ padding: "8px 12px", backgroundColor: "#eff6ff", fontSize: "11px", fontWeight: "bold", color: "#2563eb", textTransform: "uppercase" }}>
-                      Sold By: {shopOrder?.shop?.name || "Partner Store"}
+              {order?.shopOrders?.map((shopOrder) => 
+                shopOrder.shopOrderItems.map((item, iIdx) => (
+                  <tr key={iIdx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
+                      <img src={item.images?.[0]?.startsWith('http') ? item.images[0] : `${serverURL}/${item.images?.[0]}`} style={{ width: "30px", height: "30px", borderRadius: "4px" }} alt="" />
+                      <span style={{ fontWeight: "bold", fontSize: "13px" }}>{item.name}</span>
                     </td>
+                    <td style={{ padding: "12px", textAlign: "center", fontSize: "13px" }}>{item.quantity}</td>
+                    <td style={{ padding: "12px", textAlign: "right", fontSize: "13px" }}>₹{item.price}</td>
+                    <td style={{ padding: "12px", textAlign: "right", fontSize: "13px", fontWeight: "bold" }}>₹{item.price * item.quantity}</td>
                   </tr>
-                  {shopOrder.shopOrderItems.map((item, iIdx) => (
-                    <tr key={iIdx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={{ padding: "12px", display: "flex", alignItems: "center", gap: "12px" }}>
-                        <img 
-                          src={item.images?.[0]?.startsWith('http') ? item.images[0] : `${serverURL}/${item.images?.[0]}`} 
-                          style={{ width: "35px", height: "35px", borderRadius: "4px", objectFit: "cover", border: "1px solid #e2e8f0" }} 
-                          alt=""
-                        />
-                        <div>
-                          <p style={{ fontWeight: "bold", fontSize: "14px", margin: "0" }}>{item.name}</p>
-                        </div>
-                      </td>
-                      <td style={{ padding: "12px", textAlign: "center", fontSize: "14px" }}>{item.quantity}</td>
-                      <td style={{ padding: "12px", textAlign: "right", fontSize: "14px" }}>₹{item.price}</td>
-                      <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: "bold" }}>₹{item.price * item.quantity}</td>
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
 
-          {/* 4. Summary Section */}
-          <div style={{ marginTop: "30px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div style={{ width: "200px" }}>
-              <QRCode value={`InvoiceID:${order?._id}`} size={80} />
-              <p style={{ fontSize: "10px", color: "#94a3b8", marginTop: "10px" }}>Scan to verify order</p>
+          {/* Footer Summary */}
+          <div style={{ marginTop: "30px", display: "flex", justifyContent: "space-between" }}>
+            <div>
+              <QRCode value={`Order:${order?._id}`} size={60} />
+              <p style={{ fontSize: "9px", color: "#94a3b8", marginTop: "5px" }}>Official VATSTORE Invoice</p>
             </div>
-            <div style={{ width: "280px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
-                <span style={{ fontSize: "14px", color: "#64748b" }}>Subtotal:</span>
-                <span style={{ fontSize: "14px", fontWeight: "bold" }}>₹{order?.totalAmount}</span>
+            <div style={{ width: "250px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: "13px" }}>
+                <span>Subtotal:</span><span style={{ fontWeight: "bold" }}>₹{order?.totalAmount}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
-                <span style={{ fontSize: "14px", color: "#64748b" }}>Delivery:</span>
-                <span style={{ fontSize: "14px", fontWeight: "bold", color: "#16a34a" }}>{shippingFee === 0 ? "FREE" : `₹${shippingFee}`}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: "13px" }}>
+                <span>Delivery:</span><span style={{ fontWeight: "bold", color: "#16a34a" }}>{shippingFee === 0 ? "FREE" : `₹${shippingFee}`}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "15px 0", marginTop: "5px", borderTop: "2px solid #1e40af" }}>
-                <span style={{ fontSize: "18px", fontWeight: "900" }}>TOTAL:</span>
-                <span style={{ fontSize: "18px", fontWeight: "900", color: "#1e40af" }}>₹{finalTotal}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderTop: "2px solid #1e40af", marginTop: "5px" }}>
+                <span style={{ fontSize: "16px", fontWeight: "900" }}>TOTAL:</span>
+                <span style={{ fontSize: "16px", fontWeight: "900", color: "#1e40af" }}>₹{finalTotal}</span>
               </div>
             </div>
           </div>
 
-          {/* 5. Signature Section (Option 2) */}
-          <div style={{ marginTop: "90px", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            <img 
-              src="/sign.jpg" 
-              alt="Signature" 
-              style={{ width: "100px", height: "70px", marginBottom: "", marginRight: "" }} 
-            />
-            <div style={{ borderTop: "2px solid #1f2937", width: "100px", textAlign: "center", paddingTop: "5px" }}>
-              <p style={{ margin: "0", fontSize: "12px", fontWeight: "bold", color: "#1f2937", textTransform: "uppercase" }}>
-                Authorized Signatory
-              </p>
+          {/* Signature */}
+          <div style={{ marginTop: "50px", textAlign: "right" }}>
+            <img src="/sign.jpg" alt="Signature" style={{ width: "80px", height: "40px" }} />
+            <div style={{ borderTop: "1px solid #333", width: "160px", marginLeft: "auto", textAlign: "center", paddingTop: "5px" }}>
+              <p style={{ margin: "0", fontSize: "10px", fontWeight: "bold" }}>Authorized Signatory</p>
             </div>
           </div>
 
-          {/* Footer Note */}
-          <div style={{ marginTop: "60px", textAlign: "center", borderTop: "1px solid #e2e8f0", paddingTop: "20px" }}>
-            <p style={{ fontSize: "11px", color: "#94a3b8", margin: "0" }}>
-              This is a computer-generated tax invoice. No physical signature is required.
-            </p>
-            <p style={{ fontSize: "13px", fontWeight: "bold", color: "#1e40af", marginTop: "10px" }}>
-              Thank you for shopping at VatsStore!
-            </p>
-          </div>
+          <p style={{ textAlign: "center", fontSize: "10px", color: "#94a3b8", marginTop: "40px" }}>
+            This is a computer-generated document. No signature is required.
+          </p>
         </div>
       </div>
     </>

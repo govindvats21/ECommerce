@@ -19,6 +19,7 @@ export const placeOrder = async (req, res) => {
     const { cartItems, paymentMethod, deliveryAddress, totalAmount } = req.body;
     if (!cartItems || cartItems.length === 0) return res.status(400).json({ message: "Cart is empty" });
 
+    // 1. Grouping Logic (Same as before)
     const groupItemsByShop = {};
     cartItems.forEach((item) => {
       const shopId = item.shop?._id || item.shop;
@@ -29,13 +30,13 @@ export const placeOrder = async (req, res) => {
 
     const shopOrders = await Promise.all(
       Object.keys(groupItemsByShop).map(async (shopId) => {
-        const shop = await Shop.findById(shopId).populate("owner");
+        const shop = await Shop.findById(shopId);
         if (!shop) throw new Error(`Shop not found: ${shopId}`);
         const items = groupItemsByShop[shopId];
         const subTotal = items.reduce((sum, i) => sum + (Number(i.quantity) * Number(i.price)), 0);
         return {
           shop: shop._id,
-          owner: shop.owner?._id || shop.owner,
+          owner: shop.owner,
           subTotal,
           status: "pending",
           shopOrderItems: items.map((i) => ({
@@ -43,33 +44,54 @@ export const placeOrder = async (req, res) => {
             name: i.name,
             price: Number(i.price),
             quantity: Number(i.quantity),
-            images: i.images || []
+            images: Array.isArray(i.images) ? i.images : [i.image || i.images]
           })),
         };
       })
     );
 
+    // 2. Database mein Order Create karna (Ye COD aur Online dono ke liye common hai)
     const newOrder = await Order.create({
       user: req.userId,
       paymentMethod,
-      totalAmount,
+      totalAmount: Number(totalAmount),
       shopOrders,
       deliveryAddress,
-      payment: false
+      payment: paymentMethod === "cod" ? false : false // Default false
     });
 
-    if (paymentMethod === "online") {
-      const razorOrder = await instance.orders.create({
-        amount: Math.round(totalAmount * 100),
-        currency: "INR",
-        receipt: `order_rcpt_${newOrder._id}`,
-      });
-      newOrder.razorPayOrderId = razorOrder.id;
-      await newOrder.save();
-      return res.status(200).json({ razorOrder, orderId: newOrder._id });
+    // 3. AGAR COD HAI TOH YAHI SE RETURN KARDO (Razorpay touch bhi nahi hoga)
+    if (paymentMethod === "cod") {
+      console.log("COD Order Placed Successfully");
+      return res.status(200).json(newOrder);
     }
-    res.status(200).json(newOrder);
+
+    // 4. AGAR ONLINE HAI TOH RAZORPAY CHALAYEIN
+    if (paymentMethod === "online") {
+      try {
+        const razorOrder = await instance.orders.create({
+          amount: Math.round(Number(totalAmount) * 100),
+          currency: "INR",
+          receipt: `order_rcpt_${newOrder._id.toString().slice(-6)}`,
+        });
+
+        newOrder.razorPayOrderId = razorOrder.id;
+        await newOrder.save();
+        return res.status(200).json({ razorOrder, orderId: newOrder._id });
+      } catch (razorError) {
+        console.error("Razorpay Order Error:", razorError);
+        // Agar Razorpay fail ho jaye toh bhi hum order delete nahi kar rahe, 
+        // bas user ko error dikha rahe hain
+        return res.status(400).json({ 
+          message: "Razorpay Init Failed but Order Created", 
+          orderId: newOrder._id,
+          error: razorError.message 
+        });
+      }
+    }
+
   } catch (error) {
+    console.error("Main PlaceOrder Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -100,33 +122,50 @@ export const verifyPayment = async (req, res) => {
 };
 
 // 3. UPDATE ORDER STATUS (Socket removed)
+// orderController.js ke andar updateOrderStatus ko isse replace karein
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId, shopId } = req.params;
     const { status, riderId } = req.body;
 
+    // Order dhoondein
     const order = await Order.findById(orderId).populate("user");
-    const shopOrder = order.shopOrders.find((o) => o.shop.toString() === shopId);
-    if (!shopOrder) return res.status(400).json({ message: "Order not found" });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    // ✅ Match logic: String me convert karke hi check karein
+    const shopOrder = order.shopOrders.find(
+      (o) => String(o.shop?._id || o.shop) === String(shopId)
+    );
+
+    if (!shopOrder) {
+      return res.status(400).json({ message: "Shop details not found in this order" });
+    }
 
     shopOrder.status = status;
 
+    // Delivery Boy Assignment Logic
     if (status === "out of delivery") {
-      const query = riderId ? { _id: riderId } : { role: "deliveryBoy" };
-      const targets = await User.find(query);
-      const candidates = targets.map((b) => b._id);
+      if (!riderId) return res.status(400).json({ message: "Rider ID is required" });
+      
+      shopOrder.assignedDeliveryBoy = riderId;
 
       await DeliveryAssignment.create({
         order: order._id,
         shop: shopOrder.shop,
         shopOrderId: shopOrder._id,
-        broadcastedTo: candidates,
-        status: "broadcasted",
+        broadcastedTo: [riderId],
+        assignedTo: riderId,
+        status: "assigned",
       });
-      // SOCKET BROADCAST REMOVED
     }
+
+    // Deliver hone par time set karein
+    if (status === "delivered") {
+      shopOrder.deliveredAt = new Date();
+    }
+
     await order.save();
-    res.status(200).json({ message: "Status Updated" });
+    res.status(200).json({ message: "Status Updated Successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -218,8 +257,21 @@ export const getAllDeliveryBoys = async (req, res) => {
 export const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId)
-      .populate("user shopOrders.shop shopOrders.assignedDeliveryBoy shopOrders.shopOrderItems.item")
+      .populate("user") 
+      .populate({
+        path: "shopOrders.shop",
+        model: "Shop"
+      })
+      .populate({
+        path: "shopOrders.owner", // <--- Ye line add karni hai taaki mobile mil sake
+        model: "User",
+        select: "mobile fullName email" 
+      })
+      .populate("shopOrders.shopOrderItems.item")
       .lean();
+
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
     return res.status(200).json(order);
   } catch (error) {
     return res.status(500).json({ message: error.message });

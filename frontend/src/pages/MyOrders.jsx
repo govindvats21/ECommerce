@@ -33,14 +33,7 @@ const MyOrders = () => {
               <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
             </div>
 
-            {/* Refresh Button - Taaki Owner naye orders dekh sake */}
-            <button 
-              onClick={() => fetchOrders()} 
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 text-gray-700 transition"
-            >
-              <MdRefresh className="w-5 h-5 text-[#ff4d2d]" />
-              <span className="text-sm font-medium">Refresh Orders</span>
-            </button>
+          
           </div>
 
           {/* Orders List */}

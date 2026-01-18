@@ -72,7 +72,7 @@ const CheckOut = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
- const handlePlaceOrder = async () => {
+const handlePlaceOrder = async () => {
   if (!paymentMethod) return alert("Please select payment method!");
 
   const orderData = {
@@ -84,7 +84,6 @@ const CheckOut = () => {
       price: item.price,
       name: item.name,
       shop: item.shop?._id || item.shop,
-      // 🔥 Sabse zaroori line: images ko array format mein bhejna
       images: Array.isArray(item.images) ? item.images : [item.image || item.images]
     })),
     deliveryAddress: { 
@@ -98,14 +97,49 @@ const CheckOut = () => {
   try {
     const res = await axios.post(`${serverURL}/api/order/place-order`, orderData, { withCredentials: true });
     
+    // ✅ AGAR ONLINE HAI TOH POPUP KHOLO
     if (paymentMethod === "online" && res.data.razorOrder) {
-      // Razorpay logic (Same as before)
-    } else if (res.status === 200) {
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) return alert("Razorpay SDK failed to load!");
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Aapki env se key uthayega
+        amount: res.data.razorOrder.amount,
+        currency: "INR",
+        name: "Vats Store",
+        description: "Food Delivery Payment",
+        order_id: res.data.razorOrder.id,
+        handler: async (response) => {
+          try {
+            // Payment success hone par verify karein
+            const verifyRes = await axios.post(`${serverURL}/api/order/verify-payment`, {
+              razorpay_payment_id: response.razorpay_payment_id,
+              orderId: res.data.orderId
+            }, { withCredentials: true });
+
+            if (verifyRes.status === 200) {
+              navigate("/order-success");
+            }
+          } catch (err) {
+            alert("Payment Verification Failed!");
+          }
+        },
+        prefill: {
+          name: formData.fullName,
+          contact: formData.phone
+        },
+        theme: { color: "#2563eb" }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } else {
+      // COD Success
       navigate("/order-success");
     }
   } catch (err) {
     console.error(err);
-    alert("Order placement failed!");
+    alert(err.response?.data?.message || "Order placement failed!");
   }
 };
 
