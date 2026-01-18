@@ -272,10 +272,17 @@ export const getOrderById = async (req, res) => {
         path: "shopOrders.shop",
         model: "Shop"
       })
+      // 1. Shop ke owner ki details (Zaroorat ho toh)
       .populate({
-        path: "shopOrders.owner", // <--- Ye line add karni hai taaki mobile mil sake
+        path: "shopOrders.owner",
         model: "User",
-        select: "mobile fullName email" 
+        select: "mobile fullName" 
+      })
+      // 2. IMPORTANT: Rider (Delivery Boy) ki details (Isse hi tracker pe number aayega)
+      .populate({
+        path: "shopOrders.assignedDeliveryBoy", // <--- Ye line missing thi
+        model: "User", // Ya aapka jo bhi Rider model ka naam hai (usually User)
+        select: "mobile fullName location" 
       })
       .populate("shopOrders.shopOrderItems.item")
       .lean();
