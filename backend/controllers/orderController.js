@@ -337,14 +337,23 @@ export const getTodayDeliveries = async (req, res) => {
 
 export const getDeliveryBoyAssignment = async (req, res) => {
     try {
-      const assignments = await DeliveryAssignment.find({ broadcastedTo: req.userId, status: "broadcasted" }).populate("shop order");
+      // 1. Database mein filter lagao
+      const assignments = await DeliveryAssignment.find({ 
+        broadcastedTo: { $in: [req.userId] }, // Array check
+        status: "broadcasted" 
+      }).populate("shop order");
+
+      // 2. Data ko frontend ke layak banao
       const data = assignments.map(a => ({
         _id: a._id,
         assignmentId: a._id,
-        shopName: a.shop?.name,
-        deliveryAddress: a.order?.deliveryAddress?.text || a.order?.deliveryAddress,
+        shopName: a.shop?.name || "Unknown Shop",
+        deliveryAddress: a.order?.deliveryAddress, 
         subTotal: a.order?.shopOrders?.find(so => String(so._id) === String(a.shopOrderId))?.subTotal || 0
       }));
+
       res.status(200).json(data);
-    } catch (error) { res.status(500).json({ message: error.message }); }
+    } catch (error) { 
+        res.status(500).json({ message: error.message }); 
+    }
 };

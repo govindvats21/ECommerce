@@ -91,18 +91,15 @@ const DeliveryBoyDashboard = () => {
           <h1 className="text-3xl font-black text-gray-900 uppercase italic leading-none">Rider Dashboard</h1>
           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[2px] mt-1">Status: Online</p>
         </div>
-        <div className="bg-white p-4 rounded-full shadow-sm border relative">
-          <IoMdNotificationsOutline size={26} className="text-orange-500" />
-          {assignments.length > 0 && <span className="absolute top-3 right-3 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
-        </div>
+       
       </div>
 
       <div className="w-[92%] max-w-[800px] flex flex-col gap-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatItem icon={<CiDeliveryTruck size={28}/>} label="Requests" value={assignments.length} color="orange" />
           <StatItem icon={<CiShoppingCart size={28}/>} label="Active" value={currentOrder ? 1 : 0} color="green" />
-          <StatItem icon={<CiWallet size={28}/>} label="Earnings" value={`₹${todayDeliveries.reduce((s,d)=>s+(d.count || 0)*50,0)}`} color="blue" />
-          <StatItem icon={<CiTimer size={28}/>} label="Today" value={todayDeliveries[0]?.count || 0} color="green" />
+          <StatItem icon={<CiWallet size={28}/>} label="Earnings" value={`₹${(todayDeliveries[0]?.count || todayDeliveries.length || 0) * 50}`} color="blue" />
+          <StatItem icon={<CiTimer size={28}/>} label="Today"value={todayDeliveries[0]?.count || todayDeliveries.length || 0} color="green" />
         </div>
 
         {!currentOrder ? (
