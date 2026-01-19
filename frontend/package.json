@@ -13,6 +13,7 @@
     "@reduxjs/toolkit": "^2.9.0",
     "@tailwindcss/vite": "^4.1.13",
     "axios": "^1.12.2",
+    "browser-image-compression": "^2.0.2",
     "canvas-confetti": "^1.9.4",
     "confetti": "^3.0.1",
     "firebase": "^12.3.0",

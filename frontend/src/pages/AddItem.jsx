@@ -6,26 +6,12 @@ import { useForm } from "react-hook-form";
 import axios from "axios";
 import { serverURL } from "../App";
 import { setMyShopData } from "../redux/ownerSlice";
+import imageCompression from "browser-image-compression"; // ✅ 1. Library Import
 
-// ✨ Updated: Only E-commerce Categories
 const categories = [
-  "Mobiles",
-        "Laptops",
-        "Speakers",
-        "Watches",
-        "Gaming",
-        "Fashion",
-        "Tablets",
-        "Cameras",
-        "Smart Home",
-        "Accessories",
-        "Clothes",
-        "Appliances",
-        "Furniture",
-        "Backpack",
-        "Smart LED TV",
-        "Covers",
-        "Footwear",
+  "Mobiles", "Laptops", "Speakers", "Watches", "Gaming", "Fashion",
+  "Tablets", "Cameras", "Smart Home", "Accessories", "Clothes",
+  "Appliances", "Furniture", "Backpack", "Smart LED TV", "Covers", "Footwear",
 ];
 
 const AddItem = () => {
@@ -67,21 +53,35 @@ const AddItem = () => {
       formData.append("brand", details.brand || "Generic");
       formData.append("stock", details.stock);
 
-      // Attributes Logic
       if (details.colors) formData.append("colors", details.colors);
       if (details.sizes) formData.append("sizes", details.sizes);
       if (details.ram) formData.append("ram", details.ram);
       if (details.storage) formData.append("storage", details.storage);
 
-      let imagesSelected = false;
-      backendImages.forEach((file) => {
-        if (file) {
-          formData.append("images", file);
-          imagesSelected = true;
-        }
-      });
+      // ✅ 2. Image Compression Logic
+      let imagesAdded = 0;
+      const compressionOptions = {
+        maxSizeMB: 1,          // 1MB se choti file banayega
+        maxWidthOrHeight: 1280, 
+        useWebWorker: true,
+      };
 
-      if (!imagesSelected) {
+      for (const file of backendImages) {
+        if (file) {
+          try {
+            // Compress the image before appending
+            const compressedFile = await imageCompression(file, compressionOptions);
+            formData.append("images", compressedFile);
+            imagesAdded++;
+          } catch (err) {
+            console.error("Compression error, sending original:", err);
+            formData.append("images", file);
+            imagesAdded++;
+          }
+        }
+      }
+
+      if (imagesAdded === 0) {
         setError("Please select at least one image.");
         setLoading(false);
         return;
@@ -99,7 +99,7 @@ const AddItem = () => {
       dispatch(setMyShopData(res.data));
       navigate("/owner-dashboard"); 
     } catch (error) {
-      const msg = error.response?.data?.message || "Server error occurred.";
+      const msg = error.response?.data?.message || "Vercel limit exceeded or Server error.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -112,13 +112,12 @@ const AddItem = () => {
         onSubmit={handleSubmit(formSubmit)}
         className="max-w-2xl w-full bg-white rounded-xl shadow-lg p-6 md:p-8 space-y-6 border border-gray-100"
       >
-        {/* Header */}
         <div className="flex flex-col items-center">
           <div className="bg-blue-100 p-4 rounded-full mb-4">
             <FaBoxOpen className="text-blue-600 w-10 h-10 md:w-12 md:h-12" />
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Add Product</h2>
-          <p className="text-gray-500 text-center">List your shopping items here</p>
+          <p className="text-gray-500 text-center">Images will be compressed automatically for fast upload</p>
         </div>
 
         {error && <p className="bg-red-50 text-red-600 p-3 rounded-lg border border-red-200 text-center text-sm font-medium">{error}</p>}
@@ -194,29 +193,29 @@ const AddItem = () => {
           </select>
         </div>
 
-        {/* ✨ Dynamic Attributes (Only for E-commerce) */}
+        {/* Dynamic Attributes */}
         <div className="space-y-4">
           {(selectedCategory === "Mobiles" || selectedCategory === "Laptops" || selectedCategory === "Tablets") && (
             <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
               <div>
-                <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">RAM (8GB, 12GB)</label>
+                <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">RAM</label>
                 <input {...register("ram")} className="w-full border rounded-lg p-2 text-sm outline-none" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">Storage (128GB, 256GB)</label>
+                <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">Storage</label>
                 <input {...register("storage")} className="w-full border rounded-lg p-2 text-sm outline-none" />
               </div>
             </div>
           )}
 
-          {["Fashion", "Clothes", "Beauty"].includes(selectedCategory) && (
+          {["Fashion", "Clothes", "Footwear"].includes(selectedCategory) && (
             <div className="grid grid-cols-2 gap-4 p-4 bg-purple-50 rounded-xl border border-purple-100">
               <div>
-                <label className="block text-[10px] font-bold text-purple-700 uppercase mb-1">Sizes (S, M, L, XL)</label>
+                <label className="block text-[10px] font-bold text-purple-700 uppercase mb-1">Sizes</label>
                 <input {...register("sizes")} className="w-full border rounded-lg p-2 text-sm outline-none" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-purple-700 uppercase mb-1">Colors (Red, Black, White)</label>
+                <label className="block text-[10px] font-bold text-purple-700 uppercase mb-1">Colors</label>
                 <input {...register("colors")} className="w-full border rounded-lg p-2 text-sm outline-none" />
               </div>
             </div>
@@ -237,7 +236,16 @@ const AddItem = () => {
           type="submit" disabled={loading}
           className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition duration-200 shadow-lg active:scale-95 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
         >
-          {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><FaSave /> Save Product</>}
+          {loading ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Compressing & Saving...</span>
+            </>
+          ) : (
+            <>
+              <FaSave /> Save Product
+            </>
+          )}
         </button>
       </form>
     </div>

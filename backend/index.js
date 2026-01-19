@@ -19,13 +19,15 @@ app.set("trust proxy", 1);
 app.use(cors({
     origin: ["https://e-commerce-frontend-ecru-tau.vercel.app", "http://localhost:5173"],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.use(express.json());
+// ✅ VERCEL FIX: Image upload ke liye limits badhai hain
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// --- VERCEL FIX: DB Connection Middleware ---
-// Har request par check karega ki DB connected hai ya nahi
 app.use(async (req, res, next) => {
     try {
         await connectDb();
