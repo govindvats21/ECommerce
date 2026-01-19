@@ -74,6 +74,16 @@ const userSlice = createSlice({
         0
       );
     },
+    clearCart: (state) => {
+      state.cartItems = [];
+      state.totalAmount = 0;
+    },
+    logoutUser: (state) => {
+        state.userData = null;
+        state.cartItems = [];
+        state.totalAmount = 0;
+        state.myOrders = [];
+    },
     setMyOrders: (state, action) => {
       state.myOrders = action.payload;
     },
@@ -124,6 +134,8 @@ export const {
   addToCart,
   updateQuantity,
   removeFromCart,
+  clearCart,
+  logoutUser,
   setMyOrders,
   addMyOrders,
   updateOrderStatus,

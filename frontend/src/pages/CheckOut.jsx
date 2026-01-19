@@ -6,7 +6,8 @@ import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import "leaflet/dist/leaflet.css";
 import { serverURL } from "../App";
-
+import Swal from "sweetalert2"; // Popup ke liye
+import { clearCart } from "../redux/userSlice"; // Cart khali karne ke liye
 // Map View Helper
 function ChangeView({ center }) {
   const map = useMap();
@@ -21,14 +22,14 @@ const CheckOut = () => {
   const dispatch = useDispatch();
   const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("");
-  const { cartItems, totalAmount, user } = useSelector((state) => state.user);
+  const { cartItems, totalAmount, userData } = useSelector((state) => state.user);
 
   const [position, setPosition] = useState([28.6139, 77.2090]);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [formData, setFormData] = useState({
-    fullName: user?.fullName || "",
-    phone: user?.mobileNumber || "",
+    fullName: userData?.fullName || "",
+    phone: userData?.mobile || "",
     flatNo: "",
     area: "",
     landmark: "",
@@ -97,45 +98,59 @@ const handlePlaceOrder = async () => {
   try {
     const res = await axios.post(`${serverURL}/api/order/place-order`, orderData, { withCredentials: true });
     
-    // ✅ AGAR ONLINE HAI TOH POPUP KHOLO
+    // ✨ YE HAI MAIN MAGIC FUNCTION
+    const handleSuccessCleanup = () => {
+      dispatch(clearCart()); // Redux se cart khali karega
+      
+      Swal.fire({
+        title: '<span style="font-family: inherit; font-weight: 900;">ORDER PLACED!</span>',
+        html: 'Bhai, aapka order successfully mil gaya hai. <br/> <b>VatsStore</b> par bharosa karne ke liye shukriya!',
+        icon: 'success',
+        confirmButtonColor: '#2563eb',
+        confirmButtonText: 'Check My Orders',
+        buttonsStyling: true,
+        customClass: {
+          popup: 'rounded-[2rem]',
+          confirmButton: 'rounded-xl font-bold px-8 py-3'
+        }
+      }).then(() => {
+        navigate("/order-placed"); // Redirect
+      });
+    };
+
     if (paymentMethod === "online" && res.data.razorOrder) {
       const isLoaded = await loadRazorpayScript();
       if (!isLoaded) return alert("Razorpay SDK failed to load!");
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Aapki env se key uthayega
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: res.data.razorOrder.amount,
         currency: "INR",
         name: "Vats Store",
-        description: "Product Delivery Payment",
         order_id: res.data.razorOrder.id,
         handler: async (response) => {
           try {
-            // Payment success hone par verify karein
             const verifyRes = await axios.post(`${serverURL}/api/order/verify-payment`, {
               razorpay_payment_id: response.razorpay_payment_id,
               orderId: res.data.orderId
             }, { withCredentials: true });
 
             if (verifyRes.status === 200) {
-              navigate("/order-success");
+              handleSuccessCleanup(); // ✨ Online payment success cleanup
             }
           } catch (err) {
             alert("Payment Verification Failed!");
           }
         },
-        prefill: {
-          name: formData.fullName,
-          contact: formData.phone
-        },
+        prefill: { name: formData.fullName, contact: formData.phone },
         theme: { color: "#2563eb" }
       };
 
       const rzp = new window.Razorpay(options);
       rzp.open();
     } else {
-      // COD Success
-      navigate("/order-success");
+      // ✅ COD Case
+      handleSuccessCleanup(); // ✨ COD cleanup
     }
   } catch (err) {
     console.error(err);

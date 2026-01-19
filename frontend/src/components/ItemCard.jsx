@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FaMinus, FaPlus, FaShoppingCart } from "react-icons/fa";
 import { useDispatch } from "react-redux";
-import { addToCart } from "../redux/userSlice";
+import { addToCart, removeFromCart } from "../redux/userSlice"; // ✨ removeFromCart add kiya
 import { useNavigate } from "react-router-dom";
 
 const ItemCard = ({ data }) => {
@@ -20,7 +20,7 @@ const ItemCard = ({ data }) => {
         name: data.name,
         shop: data.shop,
         price: data.discountPrice,
-        quantity: newQty,
+        quantity: 1, // Redux logic handles addition
         image: itemImage,
     }));
   };
@@ -34,12 +34,14 @@ const ItemCard = ({ data }) => {
           name: data.name,
           shop: data.shop,
           price: data.discountPrice,
-          quantity: newQty,
+          quantity: -1, // Redux logic handles subtraction
           image: itemImage,
       }));
     } else {
+      // ✨ Jab quantity 0 ho jaye
       setQuantity(0);
       setShowStepper(false);
+      dispatch(removeFromCart({ id: data._id })); // 🔥 Cart se item remove kar dega
     }
   };
 
@@ -54,7 +56,7 @@ const ItemCard = ({ data }) => {
         navigate(`/single-item/${data._id}`);
       }}
     >
-      {/* 1. Image Section - Fixed Height */}
+      {/* 1. Image Section */}
       <div className="relative w-full h-32 md:h-40 flex items-center justify-center overflow-hidden rounded-xl bg-gray-50/50 mb-2">
         <img
           src={itemImage}
@@ -68,19 +70,16 @@ const ItemCard = ({ data }) => {
         )}
       </div>
 
-      {/* 2. Content Section - Using flex-grow to push footer down */}
+      {/* 2. Content Section */}
       <div className="flex flex-col flex-grow">
-        {/* Category */}
         {data?.category && (
           <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">{data.category}</p>
         )}
         
-        {/* Title - Fixed to 2 lines height */}
-        <h1 className="text-[13px] md:text-[14px] font-bold text-gray-800 leading-tight line-clamp-2 h-[34px] md:h-[3px]">
+        <h1 className="text-[13px] md:text-[14px] font-bold text-gray-800 leading-tight line-clamp-2 h-[34px]">
           {data?.name}
         </h1>
 
-        {/* Price Section */}
         <div className="">
           <div className="flex items-center gap-2">
             <span className="text-base font-black text-gray-900">₹{data?.discountPrice}</span>
@@ -91,11 +90,10 @@ const ItemCard = ({ data }) => {
           {discountAmount > 0 && (
             <p className="text-[10px] text-green-600 font-bold">You Save ₹{discountAmount}</p>
           )}
-          
         </div>
       </div>
 
-      {/* 3. Footer / Buttons - Always stays at the bottom */}
+      {/* 3. Footer / Buttons */}
       <div className="mt-3">
         {showStepper ? (
           <div className="flex items-center justify-between border-2 border-green-500 rounded-xl h-9 overflow-hidden bg-white">

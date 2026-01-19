@@ -1,24 +1,30 @@
 import { v2 as cloudinary } from "cloudinary";
-import fs from "fs";
-const uploadOnCloudinary = async (filePath) => {
-  try {
+
+const uploadOnCloudinary = async (fileBuffer) => {
+  return new Promise((resolve, reject) => {
+    // Cloudinary Config
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUDNAME,
       api_key: process.env.CLOUDINARY_API_KEY,
       api_secret: process.env.CLOUDINARY_API_SECRET,
     });
-   const result = await cloudinary.uploader.upload(filePath,{
-    folder: "items"
-   });
 
-    fs.unlinkSync(filePath);
-return result.secure_url
+    // Stream upload logic (No fs required)
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "items" },
+      (error, result) => {
+        if (result) {
+          resolve(result.secure_url);
+        } else {
+          console.error("Cloudinary Error:", error);
+          reject(error);
+        }
+      }
+    );
 
-  } catch (error) {
-    fs.unlinkSync(filePath);
-
-    console.log(error);
-  }
+    // Buffer ko stream mein likhna
+    stream.end(fileBuffer);
+  });
 };
 
 export default uploadOnCloudinary;

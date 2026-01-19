@@ -5,7 +5,7 @@ import { IoIosSearch } from "react-icons/io";
 import { FiShoppingCart } from "react-icons/fi";
 import { TbReceipt2 } from "react-icons/tb";
 import { useDispatch, useSelector } from 'react-redux';
-import { setSearchItems, setUserData } from '../redux/userSlice';
+import { setSearchItems, setUserData, logoutUser } from '../redux/userSlice'; 
 import axios from 'axios';
 import { serverURL } from '../App';
 
@@ -21,18 +21,25 @@ const Nav = () => {
   const themeBg = "bg-blue-600";
   const themeBorder = "border-blue-200";
 
-  const handleLogout = async () => {
-    try {
-      await axios.get(`${serverURL}/api/auth/signOut`, { withCredentials: true });
-      dispatch(setUserData(null));
-      localStorage.removeItem("isLoggedIn");
-      setShowInfo(false);
-      navigate("/");
-    } catch (error) {
-      console.log(error);
-    }
-  };
+ // 1. Pehle import mein logoutUser add karein (Nav.jsx ke top par)
 
+
+// 2. handleLogout function ko aise update karein:
+const handleLogout = async () => {
+  try {
+    await axios.get(`${serverURL}/api/auth/signOut`, { withCredentials: true });
+    
+    // ✨ Sirf setUserData ki jagah logoutUser dispatch karein
+    // Ye akela reducer aapka: userData = null, cartItems = [], aur totalAmount = 0 kar dega.
+    dispatch(logoutUser()); 
+    
+    localStorage.removeItem("isLoggedIn");
+    setShowInfo(false);
+    navigate("/");
+  } catch (error) {
+    console.log("Logout Error:", error);
+  }
+};
   const handleSearch = async () => {
     try {
       const res = await axios.get(
