@@ -151,8 +151,8 @@ export const updateOrderStatus = async (req, res) => {
         shop: shopOrder.shop,
         shopOrderId: shopOrder._id,
         broadcastedTo: [riderId],
-        assignedTo: riderId,
-        status: "assigned",
+        assignedTo: null,
+        status: "broadcasted",
       });
     }
 
@@ -366,7 +366,9 @@ export const getDeliveryBoyAssignment = async (req, res) => {
       const assignments = await DeliveryAssignment.find({ 
         broadcastedTo: { $in: [req.userId] }, // Array check
         status: "broadcasted" 
-      }).populate("shop order");
+      })
+      .sort({ createdAt: -1 })
+      .populate("shop order");
 
       // 2. Data ko frontend ke layak banao
       const data = assignments.map(a => ({
@@ -381,4 +383,43 @@ export const getDeliveryBoyAssignment = async (req, res) => {
     } catch (error) { 
         res.status(500).json({ message: error.message }); 
     }
+};
+
+// NEW: Delivery Boy order cancel/unassign kar sake
+export const cancelAssignment = async (req, res) => {
+  try {
+    const { orderId, shopOrderId } = req.body;
+    const riderId = req.userId; // Middleware se aayi rider ki ID
+
+    // 1. Order find karein
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: "Order nahi mila" });
+
+    // 2. ShopOrder find karein
+    const shopOrder = order.shopOrders.id(shopOrderId);
+    if (!shopOrder) return res.status(404).json({ message: "Shop details missing" });
+
+    // 3. Security check: Kya ye wahi rider hai?
+    if (String(shopOrder.assignedDeliveryBoy) !== String(riderId)) {
+      return res.status(403).json({ message: "Aap ye order cancel nahi kar sakte" });
+    }
+
+    // 4. RESET: Order se rider hatao aur status 'pending' karo
+    shopOrder.assignedDeliveryBoy = null;
+    shopOrder.status = "pending"; 
+    await order.save();
+
+    // 5. Assignment Table update: Taaki baaki riders ko wapas dikhne lage
+    await DeliveryAssignment.findOneAndUpdate(
+      { shopOrderId: shopOrderId, assignedTo: riderId },
+      { 
+        status: "broadcasted", // Wapas broadcast kar do
+        assignedTo: null 
+      }
+    );
+
+    res.status(200).json({ message: "Order unassigned successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

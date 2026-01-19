@@ -4,6 +4,7 @@ import {
   acceptOrder,
   getCurrentOrder,
   getDeliveryBoyAssignment,
+  cancelAssignment,
   getMyOrders,
   getOrderById,
   getTodayDeliveries,
@@ -26,6 +27,7 @@ orderRouter.get("/get-order-by-id/:orderId", isAuth, getOrderById);
 
 // Delivery Boy Assignment & Management
 orderRouter.get("/get-assignments", isAuth, getDeliveryBoyAssignment);
+orderRouter.post("/cancel-assignment", isAuth, cancelAssignment);
 orderRouter.get("/get-current-order", isAuth, getCurrentOrder);
 orderRouter.get("/accept-order/:assignmentId", isAuth, acceptOrder);
 orderRouter.get("/get-today-deliveries", isAuth, getTodayDeliveries);

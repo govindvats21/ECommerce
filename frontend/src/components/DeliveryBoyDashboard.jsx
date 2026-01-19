@@ -13,7 +13,7 @@ const DeliveryBoyDashboard = () => {
   const [showOtpBox, setShowOtpBox] = useState(false);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [todayDeliveries, setTodayDeliveries] = useState({ count: 0 }); // Default object with count
+  const [todayDeliveries, setTodayDeliveries] = useState({ count: 0, earnings: 0 });
 
   const formatAddress = (order) => {
     const addr = order?.deliveryAddress || order?.order?.deliveryAddress;
@@ -21,21 +21,25 @@ const DeliveryBoyDashboard = () => {
     return typeof addr === 'string' ? addr : `${addr.flatNo || ""}, ${addr.area || ""}, ${addr.city || ""}`;
   };
 
-  const fetchData = async () => {
-    try {
-      const [assignRes, activeRes, earningsRes] = await Promise.all([
-        axios.get(`${serverURL}/api/order/get-assignments`, { withCredentials: true }),
-        axios.get(`${serverURL}/api/order/get-current-order`, { withCredentials: true }),
-        axios.get(`${serverURL}/api/order/get-today-deliveries`, { withCredentials: true })
-      ]);
-      setAssignments(assignRes.data || []);
-      setCurrentOrder(activeRes.data?._id ? activeRes.data : null);
-      
-      // FIX: Backend se agar array aa raha hai toh uska count nikaalna, warna object use karna
-      const deliveryData = Array.isArray(earningsRes.data) ? earningsRes.data[0] : earningsRes.data;
-      setTodayDeliveries(deliveryData || { count: 0 });
-    } catch (error) { console.error("Data Fetch Error:", error); }
-  };
+
+
+const fetchData = async () => {
+  try {
+    const [assignRes, activeRes, earningsRes] = await Promise.all([
+      axios.get(`${serverURL}/api/order/get-assignments`, { withCredentials: true }),
+      axios.get(`${serverURL}/api/order/get-current-order`, { withCredentials: true }),
+      axios.get(`${serverURL}/api/order/get-today-deliveries`, { withCredentials: true })
+    ]);
+
+    const sortedAssignments = (assignRes.data || []).reverse(); 
+    setAssignments(sortedAssignments);
+
+    setCurrentOrder(activeRes.data?._id ? activeRes.data : null);
+    setTodayDeliveries(earningsRes.data || { count: 0, earnings: 0 });
+  } catch (error) { 
+    console.error("Data Fetch Error:", error); 
+  }
+};
 
   useEffect(() => { if (userData?._id) fetchData(); }, [userData]);
 
@@ -46,29 +50,27 @@ const DeliveryBoyDashboard = () => {
     } catch (error) { alert("Accept Action Failed"); }
   };
 
-const cancelOrder = async (id) => {
-  // Confirm karwa lo kyunki galti se click ho sakta hai
-  const confirmCancel = window.confirm("Bhai, kya aap sach mein ye order cancel karna chahte ho?");
-  if (!confirmCancel) return;
+  const cancelOrder = async () => {
+    const confirmCancel = window.confirm("Bhai, kya aap sach mein ye order cancel karna chahte ho?");
+    if (!confirmCancel) return;
 
-  try {
-    setLoading(true);
-    // Backend par cancel-assignment ka endpoint hit karein
-    await axios.post(`${serverURL}/api/order/cancel-assignment`, {
-      orderId: currentOrder._id,
-      shopOrderId: currentOrder.shopOrder._id
-    }, { withCredentials: true });
+    try {
+      setLoading(true);
+      await axios.post(`${serverURL}/api/order/cancel-assignment`, {
+        orderId: currentOrder._id,
+        shopOrderId: currentOrder.shopOrder._id
+      }, { withCredentials: true });
 
-    alert("Order Cancelled! Ab ye baaki riders ko dikhne lagega.");
-    setCurrentOrder(null); // Local state saaf karein
-    setShowOtpBox(false);
-    fetchData(); // List refresh karein taaki naye jobs dikhein
-  } catch (error) {
-    alert(error.response?.data?.message || "Cancel Action Failed");
-  } finally {
-    setLoading(false);
-  }
-};
+      alert("Order Cancelled! Ab ye baaki riders ko dikhne lagega.");
+      setCurrentOrder(null);
+      setShowOtpBox(false);
+      fetchData();
+    } catch (error) {
+      alert(error.response?.data?.message || "Cancel Action Failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const sendOtpToCustomer = async () => {
     setLoading(true);
@@ -81,7 +83,7 @@ const cancelOrder = async (id) => {
       alert("OTP Sent to Customer!");
       setShowOtpBox(true);
     } catch (error) {
-      alert("OTP Send Failed. Check Backend/Internet.");
+      alert("OTP Send Failed.");
     } finally {
       setLoading(false);
     }
@@ -92,7 +94,7 @@ const cancelOrder = async (id) => {
     try {
       await axios.post(`${serverURL}/api/order/verify-delivery-otp`, {
         orderId: currentOrder._id,
-        shopOrderId: currentOrder.shopOrder._id,
+        shopOrderId: currentOrder.shopOrderId || currentOrder.shopOrder._id,
         otp: otp
       }, { withCredentials: true });
       
@@ -105,10 +107,6 @@ const cancelOrder = async (id) => {
       alert(error.response?.data?.message || "Invalid OTP");
     }
   };
-
-  // Safe variables for display
-  const deliveryCount = todayDeliveries?.count || 0;
-  const deliveryEarnings = deliveryCount * 50;
 
   return (
     <div className="w-screen min-h-screen bg-[#F8F9FA] pt-[50px] flex flex-col items-center pb-20 font-sans">
@@ -125,10 +123,8 @@ const cancelOrder = async (id) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatItem icon={<CiDeliveryTruck size={28}/>} label="Requests" value={assignments.length} color="orange" />
           <StatItem icon={<CiShoppingCart size={28}/>} label="Active" value={currentOrder ? 1 : 0} color="green" />
-          
-          {/* FIXED STATS */}
-          <StatItem icon={<CiWallet size={28}/>} label="Earnings" value={`₹${deliveryEarnings}`} color="blue" />
-          <StatItem icon={<CiTimer size={28}/>} label="Today" value={deliveryCount} color="green" />
+          <StatItem icon={<CiWallet size={28}/>} label="Earnings" value={`₹${todayDeliveries.earnings || 0}`} color="blue" />
+          <StatItem icon={<CiTimer size={28}/>} label="Today" value={todayDeliveries.count || 0} color="green" />
         </div>
 
         {!currentOrder ? (
@@ -145,15 +141,16 @@ const cancelOrder = async (id) => {
                     <CiLocationOn className="text-orange-500 shrink-0" size={24} />
                     <p className="text-sm font-bold text-gray-600 italic">{formatAddress(a)}</p>
                   </div>
+                  {/* FIX IS HERE: Arrow function used */}
                   <button onClick={() => acceptOrder(a.assignmentId)} className="w-full bg-black text-white font-black py-5 rounded-2xl uppercase tracking-widest">Accept Order</button>
                 </div>
               )) : (
-                <div className="text-center py-10 opacity-20 font-black uppercase tracking-widest text-sm">Waiting...</div>
+                <div className="text-center py-10 opacity-20 font-black uppercase tracking-widest text-sm">Waiting for new orders...</div>
               )}
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-[3rem] shadow-2xl border-t-[12px] border-orange-500 p-8 md:p-12 animate-in fade-in zoom-in duration-500">
+          <div className="bg-white rounded-[3rem] shadow-2xl border-t-[12px] border-orange-500 p-8 md:p-12">
             <div className="bg-orange-50 p-6 rounded-[2rem] border-2 border-dashed border-orange-200 mb-8 flex items-start gap-4">
                 <CiLocationOn className="text-orange-600 shrink-0" size={30} />
                 <p className="text-md font-black text-gray-800 italic leading-snug">{formatAddress(currentOrder)}</p>
@@ -177,7 +174,7 @@ const cancelOrder = async (id) => {
             </div>
 
             {showOtpBox ? (
-              <div className="bg-orange-50 p-6 rounded-[2rem] border-2 border-orange-200 animate-in slide-in-from-bottom">
+              <div className="bg-orange-50 p-6 rounded-[2rem] border-2 border-orange-200">
                 <p className="font-black text-center text-orange-600 uppercase text-[10px] tracking-[2px] mb-4">Enter Customer OTP</p>
                 <input 
                   type="text" 
@@ -185,7 +182,7 @@ const cancelOrder = async (id) => {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   placeholder="0 0 0 0"
-                  className="w-full text-center text-3xl font-black tracking-[15px] py-4 rounded-2xl border-2 border-orange-300 bg-white mb-4 outline-none focus:border-orange-500 shadow-inner"
+                  className="w-full text-center text-3xl font-black tracking-[15px] py-4 rounded-2xl border-2 border-orange-300 bg-white mb-4 outline-none"
                 />
                 <div className="flex gap-3">
                    <button onClick={() => setShowOtpBox(false)} className="flex-1 py-4 bg-gray-200 rounded-xl font-bold uppercase text-[10px]">Back</button>
@@ -193,26 +190,23 @@ const cancelOrder = async (id) => {
                 </div>
               </div>
             ) : (
-              <button 
-                disabled={loading}
-                onClick={sendOtpToCustomer} 
-                className={`w-full ${loading ? 'bg-gray-400' : 'bg-black'} text-white font-black py-7 rounded-[2rem] uppercase text-sm shadow-2xl tracking-[2px] active:scale-95 transition-all`}
-              >
-                {loading ? "SENDING OTP..." : "Send OTP & Mark Delivered"}
-              </button>
+              <div className="flex flex-col gap-4">
+                <button 
+                  disabled={loading}
+                  onClick={sendOtpToCustomer} 
+                  className={`w-full ${loading ? 'bg-gray-400' : 'bg-black'} text-white font-black py-7 rounded-[2rem] uppercase text-sm shadow-2xl tracking-[2px]`}
+                >
+                  {loading ? "SENDING OTP..." : "Send OTP & Mark Delivered"}
+                </button>
+                
+                <button 
+                  onClick={cancelOrder}
+                  className="w-full bg-red-100 text-red-600 font-black py-4 rounded-[2rem] uppercase text-[10px] tracking-[2px] hover:bg-red-200 transition-all"
+                >
+                  Unable to deliver? Cancel Assignment
+                </button>
+              </div>
             )}
-
-
-{!showOtpBox && (
-  <button 
-    onClick={cancelOrder}
-    className="w-full mt-4 bg-red-100 text-red-600 font-black py-4 rounded-[2rem] uppercase text-[10px] tracking-[2px] hover:bg-red-200 transition-all"
-  >
-    Unable to deliver? Cancel Assignment
-  </button>
-)}
-
-
           </div>
         )}
       </div>
