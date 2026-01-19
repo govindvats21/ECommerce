@@ -61,7 +61,7 @@ const AddItem = () => {
       // ✅ 2. Image Compression Logic
       let imagesAdded = 0;
       const compressionOptions = {
-        maxSizeMB: 1,          // 1MB se choti file banayega
+        maxSizeMB: 0.6,          // 1MB se choti file banayega
         maxWidthOrHeight: 1280, 
         useWebWorker: true,
       };
@@ -99,6 +99,7 @@ const AddItem = () => {
       dispatch(setMyShopData(res.data));
       navigate("/owner-dashboard"); 
     } catch (error) {
+      console.log("Full Error Object:", error);
       const msg = error.response?.data?.message || "Vercel limit exceeded or Server error.";
       setError(msg);
     } finally {

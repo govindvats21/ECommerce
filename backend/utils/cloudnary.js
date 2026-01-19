@@ -1,15 +1,16 @@
 import { v2 as cloudinary } from "cloudinary";
+import dotenv from "dotenv";
+dotenv.config();
+
+// ✅ Config ko function se BAHAR rakhein taaki ye ek hi baar load ho
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUDNAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const uploadOnCloudinary = async (fileBuffer) => {
   return new Promise((resolve, reject) => {
-    // Cloudinary Config
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUDNAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
-
-    // Stream upload logic (No fs required)
     const stream = cloudinary.uploader.upload_stream(
       { folder: "items" },
       (error, result) => {
@@ -21,8 +22,6 @@ const uploadOnCloudinary = async (fileBuffer) => {
         }
       }
     );
-
-    // Buffer ko stream mein likhna
     stream.end(fileBuffer);
   });
 };
