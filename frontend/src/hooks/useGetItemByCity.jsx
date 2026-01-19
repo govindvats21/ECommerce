@@ -6,7 +6,7 @@ import { setAllItems, setItemsInMyCity } from '../redux/userSlice';
 const useGetItemsByCity = () => {
   const dispatch = useDispatch();
   // Loop todne ke liye URL direct likhein
-  const API_URL = "https://e-commerce-backend-one-inky.vercel.app";
+  const API_URL = "http://localhost:8000";
 
   useEffect(() => {
     const fetchItems = async () => {

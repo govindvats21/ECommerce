@@ -46,6 +46,30 @@ const DeliveryBoyDashboard = () => {
     } catch (error) { alert("Accept Action Failed"); }
   };
 
+const cancelOrder = async (id) => {
+  // Confirm karwa lo kyunki galti se click ho sakta hai
+  const confirmCancel = window.confirm("Bhai, kya aap sach mein ye order cancel karna chahte ho?");
+  if (!confirmCancel) return;
+
+  try {
+    setLoading(true);
+    // Backend par cancel-assignment ka endpoint hit karein
+    await axios.post(`${serverURL}/api/order/cancel-assignment`, {
+      orderId: currentOrder._id,
+      shopOrderId: currentOrder.shopOrder._id
+    }, { withCredentials: true });
+
+    alert("Order Cancelled! Ab ye baaki riders ko dikhne lagega.");
+    setCurrentOrder(null); // Local state saaf karein
+    setShowOtpBox(false);
+    fetchData(); // List refresh karein taaki naye jobs dikhein
+  } catch (error) {
+    alert(error.response?.data?.message || "Cancel Action Failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
   const sendOtpToCustomer = async () => {
     setLoading(true);
     try {
@@ -177,6 +201,18 @@ const DeliveryBoyDashboard = () => {
                 {loading ? "SENDING OTP..." : "Send OTP & Mark Delivered"}
               </button>
             )}
+
+
+{!showOtpBox && (
+  <button 
+    onClick={cancelOrder}
+    className="w-full mt-4 bg-red-100 text-red-600 font-black py-4 rounded-[2rem] uppercase text-[10px] tracking-[2px] hover:bg-red-200 transition-all"
+  >
+    Unable to deliver? Cancel Assignment
+  </button>
+)}
+
+
           </div>
         )}
       </div>
