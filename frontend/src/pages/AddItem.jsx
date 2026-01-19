@@ -61,7 +61,7 @@ const AddItem = () => {
       // ✅ 2. Image Compression Logic
       let imagesAdded = 0;
       const compressionOptions = {
-        maxSizeMB: 0.6,          // 1MB se choti file banayega
+        maxSizeMB: 0.4,          // 1MB se choti file banayega
         maxWidthOrHeight: 1280, 
         useWebWorker: true,
       };
