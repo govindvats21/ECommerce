@@ -1,5 +1,5 @@
 # Vats-Ecommerce 🛒
-A high-performance, full-stack multi-vendor e-commerce platform built using the MERN stack.
+A professional full-stack, multi-vendor e-commerce platform built using the MERN stack.
 
 ## 🚀 Live Demo
 Experience the live application here: [Vats-Ecommerce Live](https://e-commerce-frontend-ecru-tau.vercel.app/)
@@ -9,7 +9,7 @@ This project is a comprehensive e-commerce solution that allows multiple vendors
 
 ## ✨ Key Features
 - **Multi-Vendor Architecture:** Dedicated logic for shop creation and product management by individual vendors.
-- **Advanced Media Handling:** Integrated **Cloudinary API** with **Multer (Memory Storage)** for seamless image uploads in serverless environments.
+- **Advanced Media Handling:** Integrated **Cloudinary API** with **Multer (Memory Storage)** for high-performance image uploads in serverless environments.
 - **Secure Authentication:** Robust user and vendor authentication using **JSON Web Tokens (JWT)** and encrypted cookies.
 - **Dynamic Search & Discovery:** Optimized product searching using MongoDB Regex and category-based filtering.
 - **State Management:** Used **Redux Toolkit** for efficient data flow and a smooth user interface.
@@ -22,9 +22,17 @@ This project is a comprehensive e-commerce solution that allows multiple vendors
 - **Cloud Tools:** Cloudinary (Images), Vercel (Deployment)
 
 ## ⚙️ How to Run Locally
-1. Clone the repository:**
-   ```bash
-   git clone [https://github.com/govindvats21/ECommerce.git](https://github.com/govindvats21/ECommerce.git)
+1. Clone the repository:
+   git clone https://github.com/govindvats21/ECommerce.git
 2. Install dependencies:
    npm install
-   
+3. Set up Environment Variables:
+   Create a .env file in the root and add your MONGO_URI, JWT_SECRET, and CLOUDINARY credentials.
+4. Start the application:
+   npm run dev
+
+## 👨‍💻 Author
+**Govind Vats**
+- **GitHub:** [govindvats21](https://github.com/govindvats21)
+- **LinkedIn:** [govindvats07](https://linkedin.com/in/govindvats07)
+- **Email:** govindvats11m@gmail.com
