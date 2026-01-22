@@ -22,8 +22,9 @@ This project is a comprehensive e-commerce solution that allows multiple vendors
 - **Cloud Tools:** Cloudinary (Images), Vercel (Deployment)
 
 ## ⚙️ How to Run Locally
-1. **Clone the repository:**
+1. Clone the repository:**
    ```bash
    git clone [https://github.com/govindvats21/ECommerce.git](https://github.com/govindvats21/ECommerce.git)
-
+2. Install dependencies:
+   npm install
    
