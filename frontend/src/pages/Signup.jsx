@@ -62,7 +62,7 @@ const Signup = ({ closeModal, switchModal }) => {
     } catch (error) {
       const msg = error.response?.data?.message || "";
 
-      // BACKEND ERROR MAPPING (Field ke niche show hogi)
+      // 🔥\ BACKEND ERROR MAPPING (Field ke niche show hogi)
       if (msg.toLowerCase().includes("email")) {
         setError("email", { type: "manual", message: msg });
       } else if (
@@ -81,36 +81,47 @@ const Signup = ({ closeModal, switchModal }) => {
   };
 
   // --- Google Auth ---
-  const handleGoogleAuth = async () => {
-    const mobileValue = watch("mobile");
+// Signup.jsx mein handleGoogleAuth ko update karein
+const handleGoogleAuth = async () => {
+  const mobileValue = watch("mobile");
 
-    if (!mobileValue || !/^[6-9]\d{9}$/.test(mobileValue)) {
-      setError("mobile", {
-        type: "manual",
-        message: "Mobile number enters karo bhai!",
-      });
-      return;
+  // Pehle mobile check, phir popup
+  if (!mobileValue || !/^[6-9]\d{9}$/.test(mobileValue)) {
+    setError("mobile", { type: "manual", message: "Mobile number enters karo pehle!" });
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const provider = new GoogleAuthProvider();
+    // Isse domain check refresh ho jata hai
+    const result = await signInWithPopup(auth, provider);
+    
+    // Backend call
+    const { data } = await axios.post(`${serverURL}/api/auth/google-auth`, {
+        fullName: result.user.displayName,
+        email: result.user.email,
+        role,
+        mobile: mobileValue, 
+        location: { type: "Point", coordinates: [77.1025, 28.7041] }
+    }, { withCredentials: true });
+    
+    // Success logic...
+    localStorage.setItem("isLoggedIn", "true");
+    if (closeModal) closeModal();
+    navigate("/");
+
+  } catch (error) {
+    console.error("Error Code:", error.code);
+    if (error.code === 'auth/invalid-continue-uri') {
+      alert("Bhai, Firebase Console mein localhost add karo ya API key check karo!");
+    } else {
+      alert("Error: " + error.message);
     }
-
-    setLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-
-      // YE LINE ADD KARO: Isse domain validation refresh hota hai
-      provider.setCustomParameters({
-        prompt: "select_account",
-        auth_type: "reauthenticate",
-      });
-
-      const result = await signInWithPopup(auth, provider);
-
-    } catch (error) {
-      console.error("FIREBASE ERROR:", error.code);
-      alert("Error: " + error.code);
-    } finally {
-      setLoading(false);
-    }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const primaryColor = "#ff4d2d";
 
