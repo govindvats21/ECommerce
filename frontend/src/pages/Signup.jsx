@@ -80,55 +80,26 @@ const Signup = ({ closeModal, switchModal }) => {
     }
   };
 
-const handleGoogleAuth = async () => {
-    // 1. Mobile number get karein react-hook-form se
-    const mobileValue = watch("mobile");
-
-    // 2. Strict Check: Agar mobile empty hai ya 10 digits ka nahi hai
-    if (!mobileValue || !/^[6-9]\d{9}$/.test(mobileValue)) {
-      setError("mobile", { 
-        type: "manual", 
-        message: "⚠️ Please enter a valid 10-digit mobile number first" 
-      });
-      return; // Popup yahi ruk jayega
-    }
-
-    setLoading(true);
+ // --- Google Auth ---
+  const handleGoogleAuth = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      
-      // 3. Google Login Popup (Ab tabhi khulega jab mobile check pass hoga)
       const result = await signInWithPopup(auth, provider);
-      
-      // 4. Backend Request
       const { data } = await axios.post(`${serverURL}/api/auth/google-auth`, {
           fullName: result.user.displayName,
           email: result.user.email,
           role,
-          mobile: mobileValue, // User ka manually enter kiya hua mobile bhej rahe hain
+          mobile: result.user.phoneNumber || "",
           location: { type: "Point", coordinates: [77.1025, 28.7041] }
       }, { withCredentials: true });
       
-      if (data.token) localStorage.setItem("token", data.token);
+      if (data.token) { localStorage.setItem("token", data.token); }
       dispatch(setUserData(data.user || data));
       localStorage.setItem("isLoggedIn", "true");
-      
       if (closeModal) closeModal();
       navigate("/");
-
     } catch (error) {
-      console.error("Google Auth Error:", error.code);
-      
-      // Error handling for UI
-      if (error.code === 'auth/unauthorized-domain') {
-        alert("Domain Error: Please add 'localhost' to Firebase Authorized Domains.");
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        // No action needed, user just closed the window
-      } else {
-        setError("email", { type: "manual", message: "Auth failed. Please try again." });
-      }
-    } finally {
-      setLoading(false);
+      console.error("Google Signup Error");
     }
   };
 
