@@ -7,9 +7,6 @@ import UserDashboard from '../components/UserDashboard';
 const Home = () => {
   const { userData } = useSelector((state) => state.user);
 
-  // Debugging: Console me dekhein userData kya hai
-  console.log("Current User Data:", userData);
-
   return (
     <div className="w-full min-h-screen">
       {/* Agar login nahi hai (Guest) YA role user hai, toh Dashboard dikhao */}

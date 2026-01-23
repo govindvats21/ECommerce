@@ -1,17 +1,15 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { categories as categoryData } from "../category"; 
+import { categories as categoryData } from "../category";
 
 const CategoryCard = ({ name, image }) => {
   const navigate = useNavigate();
-
-  // Sabhi categories ab Ecommerce (Premium) hain
   const themeStyles = {
     cardBg: "bg-white hover:bg-indigo-50",
     ring: "ring-gray-100 hover:ring-indigo-200",
     text: "text-gray-800 group-hover:text-indigo-600",
-    imgShape: "rounded-2xl", 
-    shadow: "hover:shadow-xl hover:shadow-indigo-100/50"
+    imgShape: "rounded-2xl",
+    shadow: "hover:shadow-xl hover:shadow-indigo-100/50",
   };
 
   return (
@@ -27,13 +25,15 @@ const CategoryCard = ({ name, image }) => {
       `}
     >
       {/* Image Container */}
-      <div className={`
+      <div
+        className={`
         w-16 h-16 md:w-24 md:h-24 
         ${themeStyles.imgShape} 
         overflow-hidden bg-[#f9f9f9] flex items-center justify-center 
         ring-4 ${themeStyles.ring} 
         transition-all duration-500 group-hover:rotate-3
-      `}>
+      `}
+      >
         <img
           src={image || "https://via.placeholder.com/80"}
           alt={name}
@@ -42,12 +42,14 @@ const CategoryCard = ({ name, image }) => {
       </div>
 
       {/* Category Name */}
-      <span className={`
+      <span
+        className={`
         text-[11px] md:text-[13px] 
         ${themeStyles.text} 
         font-bold text-center w-full uppercase tracking-wider leading-tight
         transition-colors duration-300
-      `}>
+      `}
+      >
         {name}
       </span>
 

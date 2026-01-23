@@ -19,7 +19,6 @@ const itemSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // E-commerce mein brand name filter ke liye zaruri hai
     brand: {
       type: String,
       default: "Generic",
@@ -34,7 +33,6 @@ const itemSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    // Stock management: E-commerce items limited hote hain
     stock: {
       type: Number,
       default: 0,
@@ -63,7 +61,6 @@ const itemSchema = new mongoose.Schema(
         "Footwear",
       ],
     },
-    // Images array ko simple [String] rakhna behtar rehta hai mapping ke liye
     images: {
       type: [String],
       required: true,

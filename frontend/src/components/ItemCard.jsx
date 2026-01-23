@@ -10,43 +10,51 @@ const ItemCard = ({ data }) => {
   const [quantity, setQuantity] = useState(0);
   const [showStepper, setShowStepper] = useState(false);
 
-  const itemImage = data?.images && data?.images.length > 0 ? data.images[0] : "https://via.placeholder.com/150";
+  const itemImage =
+    data?.images && data?.images.length > 0
+      ? data.images[0]
+      : "https://via.placeholder.com/150";
 
   const handleIncrease = () => {
     const newQty = quantity + 1;
     setQuantity(newQty);
-    dispatch(addToCart({
+    dispatch(
+      addToCart({
         id: data._id,
         name: data.name,
         shop: data.shop,
         price: data.discountPrice,
-        quantity: 1, // Redux logic handles addition
+        quantity: 1,
         image: itemImage,
-    }));
+      }),
+    );
   };
 
   const handleDecrease = () => {
     if (quantity > 1) {
       const newQty = quantity - 1;
       setQuantity(newQty);
-      dispatch(addToCart({
+      dispatch(
+        addToCart({
           id: data._id,
           name: data.name,
           shop: data.shop,
           price: data.discountPrice,
-          quantity: -1, // Redux logic handles subtraction
+          quantity: -1,
           image: itemImage,
-      }));
+        }),
+      );
     } else {
-      // ✨ Jab quantity 0 ho jaye
       setQuantity(0);
       setShowStepper(false);
-      dispatch(removeFromCart({ id: data._id })); // 🔥 Cart se item remove kar dega
+      dispatch(removeFromCart({ id: data._id }));
     }
   };
 
   const discountAmount = data?.originalPrice - data?.discountPrice;
-  const discountPercentage = data?.originalPrice ? Math.round((discountAmount / data?.originalPrice) * 100) : 0;
+  const discountPercentage = data?.originalPrice
+    ? Math.round((discountAmount / data?.originalPrice) * 100)
+    : 0;
 
   return (
     <div
@@ -73,22 +81,30 @@ const ItemCard = ({ data }) => {
       {/* 2. Content Section */}
       <div className="flex flex-col flex-grow">
         {data?.category && (
-          <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">{data.category}</p>
+          <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">
+            {data.category}
+          </p>
         )}
-        
+
         <h1 className="text-[13px] md:text-[14px] font-bold text-gray-800 leading-tight line-clamp-2 h-[34px]">
           {data?.name}
         </h1>
 
         <div className="">
           <div className="flex items-center gap-2">
-            <span className="text-base font-black text-gray-900">₹{data?.discountPrice}</span>
+            <span className="text-base font-black text-gray-900">
+              ₹{data?.discountPrice}
+            </span>
             {discountPercentage > 0 && (
-              <span className="text-[11px] text-gray-400 line-through">₹{data?.originalPrice}</span>
+              <span className="text-[11px] text-gray-400 line-through">
+                ₹{data?.originalPrice}
+              </span>
             )}
           </div>
           {discountAmount > 0 && (
-            <p className="text-[10px] text-green-600 font-bold">You Save ₹{discountAmount}</p>
+            <p className="text-[10px] text-green-600 font-bold">
+              You Save ₹{discountAmount}
+            </p>
           )}
         </div>
       </div>
@@ -99,14 +115,20 @@ const ItemCard = ({ data }) => {
           <div className="flex items-center justify-between border-2 border-green-500 rounded-xl h-9 overflow-hidden bg-white">
             <button
               className="px-3 h-full hover:bg-green-50 text-green-600 transition-colors"
-              onClick={(e) => { e.stopPropagation(); handleDecrease(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDecrease();
+              }}
             >
               <FaMinus size={10} />
             </button>
             <span className="text-sm font-black text-gray-800">{quantity}</span>
             <button
               className="px-3 h-full hover:bg-green-50 text-green-600 transition-colors"
-              onClick={(e) => { e.stopPropagation(); handleIncrease(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleIncrease();
+              }}
             >
               <FaPlus size={10} />
             </button>

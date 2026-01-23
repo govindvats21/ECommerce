@@ -18,10 +18,9 @@ const CategoryPage = () => {
   }, [name]);
 
   return (
-    <div className='min-h-screen bg-[#F9FAFB]'> {/* Light neutral background */}
+    <div className='min-h-screen bg-[#F9FAFB]'>
       <Nav />
       
-      {/* 1. Improved Premium Header */}
       <div className="pt-7 pb-5 bg-white px-6 border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <button 
@@ -51,10 +50,9 @@ const CategoryPage = () => {
         </div>
       </div>
 
-      {/* 2. Grid Container with Better Spacing */}
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-12">
         {matchingItems.length > 0 ? (
-          /* Mobile fix: px-2 and gap-4 to prevent sticking to edges */
+        
          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-8">
   {matchingItems.map((item, index) => (
     <div key={index} className="w-full">
@@ -63,7 +61,7 @@ const CategoryPage = () => {
   ))}
 </div>
         ) : (
-          /* Empty State */
+        
           <div className="flex flex-col items-center justify-center py-40 text-center">
             <div className="relative mb-6">
                <div className="w-24 h-24 bg-gray-100 rounded-full animate-ping absolute opacity-20"></div>

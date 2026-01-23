@@ -7,9 +7,10 @@ const userSlice = createSlice({
     userCity: "All India",
     userState: "",
     userAddress: "",
+    buyNowItem: null,
     shopsInMyCity: [], 
     itemsInMyCity: [], 
-    allItems: [], // ✨ Naya state: Saare items ke liye
+    allItems: [],
     cartItems: [],
     outOfStockItems: {},
     totalAmount: 0,
@@ -21,7 +22,6 @@ const userSlice = createSlice({
     setUserData: (state, action) => {
       state.userData = action.payload;
     },
-    // ✨ Naya reducer: Jo backend se aane wale saare items save karega
     setAllItems: (state, action) => {
       state.allItems = action.payload;
     },
@@ -78,6 +78,9 @@ const userSlice = createSlice({
       state.cartItems = [];
       state.totalAmount = 0;
     },
+    setBuyNowItem: (state, action) => {
+    state.buyNowItem = action.payload;
+  },
     logoutUser: (state) => {
         state.userData = null;
         state.cartItems = [];
@@ -121,7 +124,6 @@ const userSlice = createSlice({
   },
 });
 
-// ✨ Yahan 'setAllItems' export list mein add kar diya gaya hai
 export const {
   setUserData,
   setAllItems,
@@ -135,6 +137,7 @@ export const {
   updateQuantity,
   removeFromCart,
   clearCart,
+   setBuyNowItem,
   logoutUser,
   setMyOrders,
   addMyOrders,

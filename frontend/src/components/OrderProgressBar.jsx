@@ -1,5 +1,4 @@
-import React from 'react'
-
+import React from "react";
 
 // Status + Label pair
 const steps = [
@@ -9,28 +8,23 @@ const steps = [
   { status: "delivered", label: "Delivered" },
 ];
 
-const OrderProgressBar = ({status}) => {
-
-    const currentStep = steps.findIndex((step)=> step.status === status)
-
+const OrderProgressBar = ({ status }) => {
+  const currentStep = steps.findIndex((step) => step.status === status);
 
   return (
-  <div className="relative w-full mt-6 px-2 sm:px-4">
+    <div className="relative w-full mt-6 px-2 sm:px-4">
       {/* Background line */}
       <div className="absolute top-3 left-2 sm:left-4 right-2 sm:right-4 h-1 bg-gray-300 rounded z-0"></div>
 
       {/* Progress line */}
-<div className="absolute top-3 left-2 sm:left-4 right-2 sm:right-4 h-1 bg-green-600 rounded z-0" 
-style={{
-    width: `${(currentStep / (steps.length-1)) * 100}%`
-}}
->
+      <div
+        className="absolute top-3 left-2 sm:left-4 right-2 sm:right-4 h-1 bg-green-600 rounded z-0"
+        style={{
+          width: `${(currentStep / (steps.length - 1)) * 100}%`,
+        }}
+      ></div>
 
-
-
-</div>
-
-  <div className="flex justify-between items-center relative z-10">
+      <div className="flex justify-between items-center relative z-10">
         {steps.map((step, index) => {
           const isCompleted = index <= currentStep;
 
@@ -57,7 +51,7 @@ style={{
         })}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default OrderProgressBar
+export default OrderProgressBar;

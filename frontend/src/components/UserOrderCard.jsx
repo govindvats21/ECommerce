@@ -15,10 +15,9 @@ const UserOrderCard = ({ data }) => {
     });
   };
 
-  // --- Image Logic Fix ---
   const getImageUrl = (item) => {
-    // 1. Pehle direct item.images check karein (Jo order mein save hua)
-    // 2. Phir item.item.images check karein (Jo populate hokar aaya)
+    //  Pehle direct item.images check karein (Jo order mein save hua)
+    //  Phir item.item.images check karein (Jo populate hokar aaya)
     const path = 
       (item?.images && item.images.length > 0 ? item.images[0] : null) || 
       (item?.item?.images && item.item.images.length > 0 ? item.item.images[0] : null);

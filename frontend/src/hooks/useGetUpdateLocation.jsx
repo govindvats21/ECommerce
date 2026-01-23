@@ -10,7 +10,6 @@ const useGetUpdateLocation = () => {
 
   useEffect(() => {
     const updateLocation = async () => {
-      // ✨ Guard Clause: Agar user login nahi hai ya city nahi mili, toh request mat bhejo
       if (!userData?._id || !city) {
         return;
       }
@@ -26,7 +25,7 @@ const useGetUpdateLocation = () => {
           dispatch(setUserData(result.data));
         }
       } catch (error) {
-        // Silent error handling for guest users or session expiry
+
         if (error.response?.status !== 400) {
            console.log("Location Update Error:", error.message);
         }

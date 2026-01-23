@@ -47,7 +47,6 @@ const CartPage = () => {
       // 'state' ka use karke hum wapas cart par la sakte hain login ke baad
       navigate("/signin", { state: { from: "/cart" } });
     } else {
-      // Agar logged in hai toh checkout par bhejo
       navigate("/checkout");
     }
   };

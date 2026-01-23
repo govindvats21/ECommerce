@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 
 const OwnerDashboard = () => {
   const { myShopData } = useSelector((state) => state.owner);
-const navigate = useNavigate()
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <Nav />
@@ -29,18 +29,28 @@ const navigate = useNavigate()
           className="w-28 h-28 rounded-lg object-cover border border-gray-300"
         />
         <div>
-          <h2 className="text-2xl font-semiboldtext-gray-800">{myShopData?.name || "Your Shop"}</h2>
-          <p className="text-gray-600 mt-1">{myShopData?.address || "Shop address not set"}</p>
-          <p className="text-gray-600 mt-1">Contact: {myShopData?.contact || "Not available"}</p>
+          <h2 className="text-2xl font-semiboldtext-gray-800">
+            {myShopData?.name || "Your Shop"}
+          </h2>
+          <p className="text-gray-600 mt-1">
+            {myShopData?.address || "Shop address not set"}
+          </p>
+          <p className="text-gray-600 mt-1">
+            Contact: {myShopData?.contact || "Not available"}
+          </p>
         </div>
       </section>
 
       {/* Items List */}
       <section className="max-w-6xl mx-auto grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {myShopData?.items && myShopData.items.length > 0 ? (
-          myShopData.items.map((item) => <OwnerItemCard key={item._id} item={item} />)
+          myShopData.items.map((item) => (
+            <OwnerItemCard key={item._id} item={item} />
+          ))
         ) : (
-          <p className="text-center text-gray-500 col-span-full">No items found. Add your first item!</p>
+          <p className="text-center text-gray-500 col-span-full">
+            No items found. Add your first item!
+          </p>
         )}
       </section>
     </div>

@@ -13,13 +13,14 @@ let instance = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// 1. PLACE ORDER
+// 1. PLACE ORDER: Naya order create karne ka main logic
 export const placeOrder = async (req, res) => {
   try {
     const { cartItems, paymentMethod, deliveryAddress, totalAmount } = req.body;
-    if (!cartItems || cartItems.length === 0) return res.status(400).json({ message: "Cart is empty" });
+    if (!cartItems || cartItems.length === 0)
+      return res.status(400).json({ message: "Cart is empty" });
 
-    // 1. Grouping Logic (Same as before)
+    // Items ko unke Shop ID ke hisaab se group kiya ja raha hai
     const groupItemsByShop = {};
     cartItems.forEach((item) => {
       const shopId = item.shop?._id || item.shop;
@@ -28,12 +29,16 @@ export const placeOrder = async (req, res) => {
       groupItemsByShop[shopId].push(item);
     });
 
+    // Har shop ke liye alag se order object taiyar ho raha hai
     const shopOrders = await Promise.all(
       Object.keys(groupItemsByShop).map(async (shopId) => {
         const shop = await Shop.findById(shopId);
         if (!shop) throw new Error(`Shop not found: ${shopId}`);
         const items = groupItemsByShop[shopId];
-        const subTotal = items.reduce((sum, i) => sum + (Number(i.quantity) * Number(i.price)), 0);
+        const subTotal = items.reduce(
+          (sum, i) => sum + Number(i.quantity) * Number(i.price),
+          0,
+        );
         return {
           shop: shop._id,
           owner: shop.owner,
@@ -44,29 +49,28 @@ export const placeOrder = async (req, res) => {
             name: i.name,
             price: Number(i.price),
             quantity: Number(i.quantity),
-            images: Array.isArray(i.images) ? i.images : [i.image || i.images]
+            images: Array.isArray(i.images) ? i.images : [i.image || i.images],
           })),
         };
-      })
+      }),
     );
-
-    // 2. Database mein Order Create karna (Ye COD aur Online dono ke liye common hai)
+    // Database mein final order save ho raha hai
     const newOrder = await Order.create({
       user: req.userId,
       paymentMethod,
       totalAmount: Number(totalAmount),
       shopOrders,
       deliveryAddress,
-      payment: paymentMethod === "cod" ? false : false // Default false
+      payment: paymentMethod === "cod" ? false : false, // Default false
     });
 
-    // 3. AGAR COD HAI TOH YAHI SE RETURN KARDO (Razorpay touch bhi nahi hoga)
+    // Agar Cash on Delivery hai toh response turant bhej do
     if (paymentMethod === "cod") {
       console.log("COD Order Placed Successfully");
       return res.status(200).json(newOrder);
     }
 
-    // 4. AGAR ONLINE HAI TOH RAZORPAY CHALAYEIN
+    // Online payment ke liye Razorpay API call ho rahi hai
     if (paymentMethod === "online") {
       try {
         const razorOrder = await instance.orders.create({
@@ -80,23 +84,22 @@ export const placeOrder = async (req, res) => {
         return res.status(200).json({ razorOrder, orderId: newOrder._id });
       } catch (razorError) {
         console.error("Razorpay Order Error:", razorError);
-        // Agar Razorpay fail ho jaye toh bhi hum order delete nahi kar rahe, 
+        // Agar Razorpay fail ho jaye toh bhi hum order delete nahi kar rahe,
         // bas user ko error dikha rahe hain
-        return res.status(400).json({ 
-          message: "Razorpay Init Failed but Order Created", 
+        return res.status(400).json({
+          message: "Razorpay Init Failed but Order Created",
           orderId: newOrder._id,
-          error: razorError.message 
+          error: razorError.message,
         });
       }
     }
-
   } catch (error) {
     console.error("Main PlaceOrder Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// 2. VERIFY PAYMENT (Socket removed)
+// 2. VERIFY PAYMENT: Payment successful hone par data update
 export const verifyPayment = async (req, res) => {
   try {
     const { razorpay_payment_id, orderId } = req.body;
@@ -108,44 +111,41 @@ export const verifyPayment = async (req, res) => {
 
     const order = await Order.findById(orderId);
     if (!order) return res.status(400).json({ message: "Order not found" });
-
+    // Payment confirm hote hi order status update
     order.payment = true;
     order.razorPayPaymentId = razorpay_payment_id;
     await order.save();
-
-    // SOCKET LOGIC REMOVED FROM HERE
-    // Ab user ko refresh karne par update dikhega
     res.status(200).json(order);
   } catch (error) {
     res.status(500).json({ message: "Payment verification failed" });
   }
 };
 
-// 3. UPDATE ORDER STATUS (Socket removed)
-// orderController.js ke andar updateOrderStatus ko isse replace karein
+// 3. UPDATE ORDER STATUS: Shop owner ya Admin status change karte hain
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId, shopId } = req.params;
     const { status, riderId } = req.body;
-
-    // 1. Order find aur populate (initial fetch)
-    const order = await Order.findById(orderId).populate("user shopOrders.shop shopOrders.owner");
+    const order = await Order.findById(orderId).populate(
+      "user shopOrders.shop shopOrders.owner",
+    );
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     const shopOrder = order.shopOrders.find(
-      (o) => String(o.shop?._id || o.shop) === String(shopId)
+      (o) => String(o.shop?._id || o.shop) === String(shopId),
     );
 
     if (!shopOrder) return res.status(400).json({ message: "Shop not found" });
 
     shopOrder.status = status;
 
-    // 2. Rider logic
+    // Jab status 'out of delivery' ho toh Rider assigned hota hai
     if (status === "out of delivery") {
-      if (!riderId) return res.status(400).json({ message: "Rider ID required" });
+      if (!riderId)
+        return res.status(400).json({ message: "Rider ID required" });
       shopOrder.assignedDeliveryBoy = riderId;
 
-      // Delivery assignment create karein
+      // Rider ko broadcast karne ke liye assignment create kiya ja raha hai
       await DeliveryAssignment.create({
         order: order._id,
         shop: shopOrder.shop,
@@ -156,40 +156,39 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
+    // Status 'delivered' hone par delivery time record kiya ja raha hai
     if (status === "delivered") {
       shopOrder.deliveredAt = new Date();
     }
-
-    // 3. Save order
     await order.save();
 
-    // 4. VERCEL SPECIAL: Deep Populate (Sab kuch wapas fetch karein rider details ke saath)
     const finalOrder = await Order.findById(orderId)
       .populate("user")
       .populate("shopOrders.shop")
       .populate("shopOrders.owner")
       .populate({
         path: "shopOrders.assignedDeliveryBoy",
-        select: "fullName mobile location" // Ye fields tracking page ke liye zaroori hain
+        select: "fullName mobile location",
       })
       .populate("shopOrders.shopOrderItems.item");
 
-    res.status(200).json({ message: "Status Updated Successfully", order: finalOrder });
+    res
+      .status(200)
+      .json({ message: "Status Updated Successfully", order: finalOrder });
   } catch (error) {
     console.error("Order Update Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// --- Baki ke functions (acceptOrder, getCurrentOrder, etc.) niche same logic se chalenge ---
-// Note: Maine unme se bhi socket calls hata diye hain.
-
+// 4. ACCEPT ORDER: Rider job ko accept karta hai
 export const acceptOrder = async (req, res) => {
   try {
     const { assignmentId } = req.params;
     const assignment = await DeliveryAssignment.findById(assignmentId);
-    if (!assignment || assignment.status !== "broadcasted") return res.status(400).json({ message: "Expired" });
-
+    if (!assignment || assignment.status !== "broadcasted")
+      return res.status(400).json({ message: "Expired" });
+    // Rider ID assignment aur order mein update ho rahi hai
     assignment.assignedTo = req.userId;
     assignment.status = "assigned";
     await assignment.save();
@@ -205,12 +204,13 @@ export const acceptOrder = async (req, res) => {
   }
 };
 
+// 5. SEND DELIVERY OTP: Customer ko delivery code bhejna
 export const sendDeliveryOtp = async (req, res) => {
   try {
     const { orderId, shopOrderId } = req.body;
     const order = await Order.findById(orderId).populate("user");
     const shopOrder = order.shopOrders.id(shopOrderId);
-    
+    // Naya 4-digit random OTP create ho raha hai
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     shopOrder.deliveryOtp = otp;
     shopOrder.otpExpires = Date.now() + 600000;
@@ -223,66 +223,84 @@ export const sendDeliveryOtp = async (req, res) => {
   }
 };
 
-// ... Baki GET functions (getMyOrders, getTodayDeliveries, etc.) as it is rahenge
-// (Maine unhe compact rakha hai space ke liye, logic unchanged hai)
-
+// 6. GET MY ORDERS: User ya Shop owner ke hisaab se orders list nikalna
 export const getMyOrders = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     let orders;
     if (user.role === "user") {
-      orders = await Order.find({ user: req.userId }).sort({ createdAt: -1 }).populate("shopOrders.owner shopOrders.shop user");
+      orders = await Order.find({ user: req.userId })
+        .sort({ createdAt: -1 })
+        .populate("shopOrders.owner shopOrders.shop user");
     } else {
-      orders = await Order.find({ "shopOrders.owner": req.userId }).sort({ createdAt: -1 }).populate("user shopOrders.shop");
+      orders = await Order.find({ "shopOrders.owner": req.userId })
+        .sort({ createdAt: -1 })
+        .populate("user shopOrders.shop");
     }
     res.status(200).json(orders);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
+// 7. VERIFY DELIVERY OTP: OTP match hone par order complete mark karna
 export const verifyDeliveryOtp = async (req, res) => {
   try {
     const { orderId, shopOrderId, otp } = req.body;
     const order = await Order.findById(orderId);
     const shopOrder = order.shopOrders.id(shopOrderId);
-    if (shopOrder.deliveryOtp !== otp) return res.status(400).json({ message: "Invalid OTP" });
 
+    if (shopOrder.deliveryOtp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+    // Status change aur timestamp update (Isse hi earnings calculate hoti hain)
     shopOrder.status = "delivered";
+    shopOrder.deliveredAt = new Date();
+
     await order.save();
-    await DeliveryAssignment.updateOne({ shopOrderId: shopOrder._id }, { status: "completed" });
+    // Assignment record ko 'completed' set kiya ja raha hai
+    await DeliveryAssignment.updateOne(
+      { shopOrderId: shopOrder._id },
+      { status: "completed" },
+    );
+
     res.status(200).json({ message: "Delivered" });
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-// Is function ko apne orderController.js ke niche add karein
+// 8. GET ALL DELIVERY BOYS: Admin ke liye riders ki list
 export const getAllDeliveryBoys = async (req, res) => {
   try {
-    const boys = await User.find({ role: "deliveryBoy" }).select("fullName _id mobile");
+    const boys = await User.find({ role: "deliveryBoy" }).select(
+      "fullName _id mobile",
+    );
     res.status(200).json(boys);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Ye bhi add kar lena agar routes mein use ho raha hai
+// 9. GET ORDER BY ID: Single order ki poori details fetch karna
 export const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId)
-      .populate("user") 
+      .populate("user")
       .populate({
         path: "shopOrders.shop",
-        model: "Shop"
+        model: "Shop",
       })
-      // 1. Shop ke owner ki details (Zaroorat ho toh)
       .populate({
         path: "shopOrders.owner",
         model: "User",
-        select: "mobile fullName" 
+        select: "mobile fullName",
       })
-      // 2. IMPORTANT: Rider (Delivery Boy) ki details (Isse hi tracker pe number aayega)
+      //  IMPORTANT: Rider (Delivery Boy) ki details (Isse hi tracker pe number aayega)
       .populate({
-        path: "shopOrders.assignedDeliveryBoy", // <--- Ye line missing thi
-        model: "User", // Ya aapka jo bhi Rider model ka naam hai (usually User)
-        select: "mobile fullName location" 
+        path: "shopOrders.assignedDeliveryBoy",
+        model: "User",
+        select: "mobile fullName location",
       })
       .populate("shopOrders.shopOrderItems.item")
       .lean();
@@ -295,6 +313,7 @@ export const getOrderById = async (req, res) => {
   }
 };
 
+// 10. GET CURRENT ORDER: Rider ka active order nikalna
 export const getCurrentOrder = async (req, res) => {
   try {
     const assignment = await DeliveryAssignment.findOne({
@@ -310,7 +329,7 @@ export const getCurrentOrder = async (req, res) => {
     if (!assignment || !assignment.order) return res.status(200).json(null);
 
     const shopOrder = assignment.order.shopOrders.find(
-      (so) => String(so._id) === String(assignment.shopOrderId)
+      (so) => String(so._id) === String(assignment.shopOrderId),
     );
 
     if (!shopOrder) return res.status(200).json(null);
@@ -319,15 +338,18 @@ export const getCurrentOrder = async (req, res) => {
       _id: assignment.order._id,
       user: assignment.order.user,
       shopOrder,
-      deliveryAddress: assignment.order.deliveryAddress.text || assignment.order.deliveryAddress,
+      deliveryAddress:
+        assignment.order.deliveryAddress.text ||
+        assignment.order.deliveryAddress,
       shop: assignment.shop,
-      assignmentId: assignment._id
+      assignmentId: assignment._id,
     });
   } catch (error) {
     return res.status(500).json({ message: "Current order fetch failed" });
   }
 };
 
+// 11. GET TODAY DELIVERIES: Earning calculation (₹50 count)
 export const getTodayDeliveries = async (req, res) => {
   try {
     const startsOfDay = new Date();
@@ -340,82 +362,90 @@ export const getTodayDeliveries = async (req, res) => {
     }).lean();
 
     let count = 0;
-    orders.forEach(o => {
-      o.shopOrders.forEach(so => {
-        // Sirf wahi shopOrder count karein jo is delivery boy ka hai aur delivered hai
-        if(String(so.assignedDeliveryBoy) === String(req.userId) && so.status === 'delivered') {
+    orders.forEach((o) => {
+      o.shopOrders.forEach((so) => {
+        // Double check for rider and date
+        if (
+          String(so.assignedDeliveryBoy) === String(req.userId) &&
+          so.status === "delivered" &&
+          so.deliveredAt &&
+          new Date(so.deliveredAt) >= startsOfDay
+        ) {
           count++;
         }
       });
     });
 
-    // Seedha count aur total earnings bhej rahe hain
-    res.status(200).json({ 
-      count: count, 
+    res.status(200).json({
+      count: count,
       earnings: count * 50,
-      hour: new Date().getHours() 
     });
   } catch (error) {
     return res.status(500).json({ message: "Today deliveries error" });
   }
 };
 
+// 12. GET DELIVERY BOY ASSIGNMENTS: Broadcast list
 export const getDeliveryBoyAssignment = async (req, res) => {
-    try {
-      // 1. Database mein filter lagao
-      const assignments = await DeliveryAssignment.find({ 
-        broadcastedTo: { $in: [req.userId] }, // Array check
-        status: "broadcasted" 
-      })
+  try {
+    // 1. Database mein filter lagao
+    const assignments = await DeliveryAssignment.find({
+      broadcastedTo: { $in: [req.userId] }, // Array check
+      status: "broadcasted",
+    })
       .sort({ createdAt: -1 })
       .populate("shop order");
 
-      // 2. Data ko frontend ke layak banao
-      const data = assignments.map(a => ({
-        _id: a._id,
-        assignmentId: a._id,
-        shopName: a.shop?.name || "Unknown Shop",
-        deliveryAddress: a.order?.deliveryAddress, 
-        subTotal: a.order?.shopOrders?.find(so => String(so._id) === String(a.shopOrderId))?.subTotal || 0
-      }));
+    // 2. Data ko frontend ke layak banao
+    const data = assignments.map((a) => ({
+      _id: a._id,
+      assignmentId: a._id,
+      shopName: a.shop?.name || "Unknown Shop",
+      deliveryAddress: a.order?.deliveryAddress,
+      subTotal:
+        a.order?.shopOrders?.find(
+          (so) => String(so._id) === String(a.shopOrderId),
+        )?.subTotal || 0,
+    }));
 
-      res.status(200).json(data);
-    } catch (error) { 
-        res.status(500).json({ message: error.message }); 
-    }
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-// NEW: Delivery Boy order cancel/unassign kar sake
+// 13. CANCEL ASSIGNMENT: Rider agar order deliver nahi kar sakta toh wapas release karna
 export const cancelAssignment = async (req, res) => {
   try {
     const { orderId, shopOrderId } = req.body;
     const riderId = req.userId; // Middleware se aayi rider ki ID
 
-    // 1. Order find karein
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: "Order nahi mila" });
 
-    // 2. ShopOrder find karein
     const shopOrder = order.shopOrders.id(shopOrderId);
-    if (!shopOrder) return res.status(404).json({ message: "Shop details missing" });
+    if (!shopOrder)
+      return res.status(404).json({ message: "Shop details missing" });
 
-    // 3. Security check: Kya ye wahi rider hai?
+    // Security check: Kya ye wahi rider hai?
     if (String(shopOrder.assignedDeliveryBoy) !== String(riderId)) {
-      return res.status(403).json({ message: "Aap ye order cancel nahi kar sakte" });
+      return res
+        .status(403)
+        .json({ message: "Aap ye order cancel nahi kar sakte" });
     }
 
-    // 4. RESET: Order se rider hatao aur status 'pending' karo
+    // RESET: Order se rider hatao aur status 'pending' karo
     shopOrder.assignedDeliveryBoy = null;
-    shopOrder.status = "pending"; 
+    shopOrder.status = "pending";
     await order.save();
 
-    // 5. Assignment Table update: Taaki baaki riders ko wapas dikhne lage
+    // Assignment Table update: Taaki baaki riders ko wapas dikhne lage
     await DeliveryAssignment.findOneAndUpdate(
       { shopOrderId: shopOrderId, assignedTo: riderId },
-      { 
+      {
         status: "broadcasted", // Wapas broadcast kar do
-        assignedTo: null 
-      }
+        assignedTo: null,
+      },
     );
 
     res.status(200).json({ message: "Order unassigned successfully" });

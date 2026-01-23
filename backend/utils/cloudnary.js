@@ -2,7 +2,6 @@ import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 dotenv.config();
 
-// ✅ Config ko function se BAHAR rakhein taaki ye ek hi baar load ho
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUDNAME,
   api_key: process.env.CLOUDINARY_API_KEY,

@@ -6,7 +6,6 @@ const shopOrderItemSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Item",
     },
-    // Yeh fields add karni zaroori hain kyunki controller se ye bhej rahe ho
     name: String,
     price: Number,
     quantity: Number,
@@ -68,17 +67,15 @@ const orderSchema = new mongoose.Schema(
       enum: ["cod", "online"],
       required: true,
     },
-    // --- Detailed Address (Matches your new UI) ---
     deliveryAddress: {
       fullName: { type: String, required: true },
       phone: { type: String, required: true },
       flatNo: { type: String, required: true },
-      area: { type: String, required: true }, // Street/Area details
+      area: { type: String, required: true },
       city: { type: String, required: true },
       state: { type: String, required: true },
       pincode: { type: String, required: true },
       landmark: { type: String },
-      // Map Coordinates for precise delivery
       latitude: { type: Number, required: true }, 
       longitude: { type: Number, required: true },
     },

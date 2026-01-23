@@ -10,7 +10,6 @@ const useGetShopsByCity = () => {
   useEffect(() => {
     const fetchShops = async () => {
       try {
-        // City hata kar get-all-shops kar diya
         const result = await axios.get(`${serverURL}/api/shop/get-all-shops`, {
           withCredentials: true,
         });
@@ -21,7 +20,7 @@ const useGetShopsByCity = () => {
     };
 
     fetchShops();
-  }, [dispatch]); // Ab ye city badalne ka intezar nahi karega
+  }, [dispatch]); 
 };
 
 export default useGetShopsByCity;

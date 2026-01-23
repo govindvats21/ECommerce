@@ -6,8 +6,8 @@ dotenv.config()
 const transporter = nodemailer.createTransport({
   service: "gmail",
   host: "smtp.gmail.com",
-  port: 587, // Render par 587 zyada stable hai
-  secure: false, // 587 ke liye false
+  port: 587, 
+  secure: false,
   pool: true,    // Connection ko hamesha open rakhta hai (Fast Delivery)
   auth: {
     user: process.env.EMAIL,

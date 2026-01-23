@@ -6,7 +6,6 @@ import {
   FaArrowLeft,
   FaMapMarkerAlt,
   FaStoreAlt,
-  FaShoppingBasket,
   FaUtensils,
 } from "react-icons/fa";
 

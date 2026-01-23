@@ -13,29 +13,38 @@ const AllProducts = () => {
   const dispatch = useDispatch();
 
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [selectedBrand, setSelectedBrand] = useState(""); 
+  const [selectedBrand, setSelectedBrand] = useState("");
   const [priceRange, setPriceRange] = useState([0, 250000]);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState("");
   const itemsPerPage = 15;
 
   const clean = (val) => Number(String(val || 0).replace(/[^0-9.]/g, ""));
-  
-  // 1. Unique Categories nikalna
-  const categories = itemsInMyCity ? [...new Set(itemsInMyCity.map((item) => item.category))] : [];
 
-  // 2. ✨ Dynamic Brand Logic: 
-  // Ye sirf un categories ke brands dikhayega jo 'selectedCategories' mein hain.
-  const availableBrands = (itemsInMyCity && selectedCategories.length > 0)
-    ? [...new Set(itemsInMyCity
-        .filter(i => selectedCategories.includes(i.category))
-        .map(i => i.brand)
-        .filter(Boolean))] 
+  // 1. Unique Categories nikalna
+  const categories = itemsInMyCity
+    ? [...new Set(itemsInMyCity.map((item) => item.category))]
     : [];
 
+  // 2. ✨ Dynamic Brand Logic:
+  // Ye sirf un categories ke brands dikhayega jo 'selectedCategories' mein hain.
+  const availableBrands =
+    itemsInMyCity && selectedCategories.length > 0
+      ? [
+          ...new Set(
+            itemsInMyCity
+              .filter((i) => selectedCategories.includes(i.category))
+              .map((i) => i.brand)
+              .filter(Boolean),
+          ),
+        ]
+      : [];
+
   const handleCategoryChange = (category) => {
-    setSelectedCategories(prev => 
-      prev.includes(category) ? prev.filter(c => c !== category) : [...prev, category]
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category],
     );
     setSelectedBrand(""); // Category badalne par brand reset
     setCurrentPage(1);
@@ -44,7 +53,9 @@ const AllProducts = () => {
   // --- Filtering Logic ---
   let filteredItems = (itemsInMyCity || []).filter((item) => {
     const itemPrice = clean(item.discountPrice || item.price || 0);
-    const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(item.category);
+    const categoryMatch =
+      selectedCategories.length === 0 ||
+      selectedCategories.includes(item.category);
     const priceMatch = itemPrice >= priceRange[0] && itemPrice <= priceRange[1];
     const brandMatch = !selectedBrand || item.brand === selectedBrand;
 
@@ -52,24 +63,37 @@ const AllProducts = () => {
   });
 
   // --- Sorting Logic ---
-  if (sortBy === "low-high") filteredItems.sort((a, b) => clean(a.discountPrice || a.price) - clean(b.discountPrice || b.price));
-  if (sortBy === "high-low") filteredItems.sort((a, b) => clean(b.discountPrice || b.price) - clean(a.discountPrice || a.price));
+  if (sortBy === "low-high")
+    filteredItems.sort(
+      (a, b) =>
+        clean(a.discountPrice || a.price) - clean(b.discountPrice || b.price),
+    );
+  if (sortBy === "high-low")
+    filteredItems.sort(
+      (a, b) =>
+        clean(b.discountPrice || b.price) - clean(a.discountPrice || a.price),
+    );
 
-  const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
   return (
     <div className="bg-[#f8f8f8] min-h-screen font-sans antialiased">
       <Nav />
-      
+
       <div className="pt-4 px-3 md:px-8 lg:px-12 max-w-[1600px] mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight italic uppercase">
-            {selectedBrand ? `${selectedBrand} Collection` : "Our Collection"} 
-            <span className="text-gray-400 font-semibold text-lg ml-2 not-italic">({filteredItems.length})</span>
+            {selectedBrand ? `${selectedBrand} Collection` : "Our Collection"}
+            <span className="text-gray-400 font-semibold text-lg ml-2 not-italic">
+              ({filteredItems.length})
+            </span>
           </h1>
-          <select 
-            value={sortBy} 
+          <select
+            value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
             className="bg-white border border-gray-200 text-sm font-bold py-2.5 px-4 rounded-xl shadow-sm outline-none cursor-pointer hover:bg-gray-50 transition-colors"
           >
@@ -83,7 +107,6 @@ const AllProducts = () => {
           {/* Sidebar */}
           <aside className="w-full lg:w-64 flex-shrink-0">
             <div className="sticky top-28 space-y-5">
-              
               {/* Category Filter */}
               <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                 <h3 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-5 flex items-center gap-2">
@@ -91,7 +114,11 @@ const AllProducts = () => {
                 </h3>
                 <div className="flex flex-wrap lg:flex-col gap-2">
                   <button
-                    onClick={() => {setSelectedCategories([]); setSelectedBrand(""); setCurrentPage(1);}}
+                    onClick={() => {
+                      setSelectedCategories([]);
+                      setSelectedBrand("");
+                      setCurrentPage(1);
+                    }}
                     className={`text-left px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all ${selectedCategories.length === 0 ? "bg-black text-white shadow-lg shadow-black/20" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
                   >
                     All Items
@@ -139,14 +166,22 @@ const AllProducts = () => {
                 <h3 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-5 flex items-center gap-2">
                   <BiSliderAlt size={16} /> Max Price
                 </h3>
-                <input 
-                  type="range" min={0} max={250000} step={5000} value={priceRange[1]}
+                <input
+                  type="range"
+                  min={0}
+                  max={250000}
+                  step={5000}
+                  value={priceRange[1]}
                   onChange={(e) => setPriceRange([0, Number(e.target.value)])}
                   className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-black"
                 />
                 <div className="flex justify-between items-center mt-4">
-                  <span className="text-[14px] font-black text-black">₹{priceRange[1].toLocaleString()}</span>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase">Limit</span>
+                  <span className="text-[14px] font-black text-black">
+                    ₹{priceRange[1].toLocaleString()}
+                  </span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">
+                    Limit
+                  </span>
                 </div>
               </div>
             </div>
@@ -160,13 +195,19 @@ const AllProducts = () => {
                 const sPrice = item.discountPrice || item.price;
                 const nPrice = clean(sPrice);
                 const nOriginal = clean(item.originalPrice);
-                const discount = nOriginal > nPrice ? Math.round(((nOriginal - nPrice) / nOriginal) * 100) : 0;
+                const discount =
+                  nOriginal > nPrice
+                    ? Math.round(((nOriginal - nPrice) / nOriginal) * 100)
+                    : 0;
                 const saveAmount = nOriginal - nPrice;
 
                 return (
-                  <div key={item._id} className="group bg-white rounded-[1.5rem] p-3 border border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 transition-all flex flex-col h-full">
+                  <div
+                    key={item._id}
+                    className="group bg-white rounded-[1.5rem] p-3 border border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 transition-all flex flex-col h-full"
+                  >
                     {/* Image Area */}
-                    <div 
+                    <div
                       className="relative aspect-square overflow-hidden rounded-xl cursor-pointer flex items-center justify-center"
                       onClick={() => navigate(`/single-item/${item._id}`)}
                     >
@@ -176,10 +217,25 @@ const AllProducts = () => {
                         </span>
                       )}
 
-                      <img src={displayImg} alt={item.name} className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500" />
-                      
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); dispatch(addToCart({ ...item, id: item._id, price: nPrice, quantity: 1, image: displayImg })); }}
+                      <img
+                        src={displayImg}
+                        alt={item.name}
+                        className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
+                      />
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          dispatch(
+                            addToCart({
+                              ...item,
+                              id: item._id,
+                              price: nPrice,
+                              quantity: 1,
+                              image: displayImg,
+                            }),
+                          );
+                        }}
                         className="absolute bottom-3 right-3 w-10 h-10 bg-white text-black rounded-full flex items-center justify-center shadow-xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all hover:bg-black hover:text-white"
                       >
                         <HiOutlineShoppingBag size={20} />
@@ -189,25 +245,33 @@ const AllProducts = () => {
                     {/* Content Section */}
                     <div className="mt-4 px-2 flex flex-col flex-1">
                       <div className="flex justify-between items-start">
-                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{item.category}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase italic">{item.brand}</p>
+                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                          {item.category}
+                        </p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase italic">
+                          {item.brand}
+                        </p>
                       </div>
                       <h3 className="text-[15px] font-bold text-gray-900 leading-snug line-clamp-2 mt-1 min-h-[12px]">
                         {item.name}
                       </h3>
-                      
+
                       <div className="mt-auto pt-3 border-t border-gray-50 flex flex-col">
                         <div className="flex items-baseline gap-2">
-                          <span className="text-[18px] font-black text-gray-900 tracking-tight">₹{sPrice}</span>
+                          <span className="text-[18px] font-black text-gray-900 tracking-tight">
+                            ₹{sPrice}
+                          </span>
                           {discount > 0 && (
-                            <span className="text-xs text-gray-400 line-through font-semibold">₹{item.originalPrice}</span>
+                            <span className="text-xs text-gray-400 line-through font-semibold">
+                              ₹{item.originalPrice}
+                            </span>
                           )}
                         </div>
                         {/* ✨ GREEN SAVE TEXT */}
                         {discount > 0 && (
-                           <p className="text-[11px] text-green-600 font-bold mt-0.5">
-                             You save ₹{saveAmount.toLocaleString()}
-                           </p>
+                          <p className="text-[11px] text-green-600 font-bold mt-0.5">
+                            You save ₹{saveAmount.toLocaleString()}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -219,15 +283,21 @@ const AllProducts = () => {
             {/* Pagination */}
             {Math.ceil(filteredItems.length / itemsPerPage) > 1 && (
               <div className="flex justify-center gap-3 mt-16 mb-12">
-                {Array.from({ length: Math.ceil(filteredItems.length / itemsPerPage) }, (_, i) => (
-                  <button 
-                    key={i} 
-                    onClick={() => { setCurrentPage(i + 1); window.scrollTo(0,0); }}
-                    className={`w-11 h-11 rounded-xl text-sm font-black shadow-sm transition-all ${currentPage === i+1 ? "bg-black text-white scale-110 shadow-black/20" : "bg-white text-gray-400 border border-gray-100 hover:bg-gray-50"}`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
+                {Array.from(
+                  { length: Math.ceil(filteredItems.length / itemsPerPage) },
+                  (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setCurrentPage(i + 1);
+                        window.scrollTo(0, 0);
+                      }}
+                      className={`w-11 h-11 rounded-xl text-sm font-black shadow-sm transition-all ${currentPage === i + 1 ? "bg-black text-white scale-110 shadow-black/20" : "bg-white text-gray-400 border border-gray-100 hover:bg-gray-50"}`}
+                    >
+                      {i + 1}
+                    </button>
+                  ),
+                )}
               </div>
             )}
           </div>

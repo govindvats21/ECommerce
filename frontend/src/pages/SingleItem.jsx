@@ -1,16 +1,17 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { serverURL } from "../App";
 import Nav from "../components/Nav";
 import RelatedItems from "../components/RelatedItems";
 import { useDispatch, useSelector } from "react-redux";
-import { addToCart } from "../redux/userSlice";
+import { addToCart, setBuyNowItem } from "../redux/userSlice";
 import Footer from "../components/Footer";
 import { categories as categoryStaticData } from "../category"; 
 
 const SingleItem = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { itemId } = useParams();
   const [item, setItem] = useState(null);
   const [mainImage, setMainImage] = useState("");
@@ -68,6 +69,29 @@ const SingleItem = () => {
   const staticCategoryInfo = categoryStaticData.find(cat => cat.category === item.category);
   
   const isOutOfStock = !item.stock || item.stock <= 0;
+
+  const handleBuyNow = () => {
+  const shopId = item.shop?._id || item.shop;
+  
+  const buyNowData = {
+    id: item._id,
+    name: item.name,
+    price: item.discountPrice,
+    image: mainImage,
+    shop: shopId,
+    quantity: 1,
+    variant: { 
+      size: selectedSize, 
+      ram: selectedRam, 
+      storage: selectedStorage, 
+      weight: selectedWeight, 
+      color: selectedColor 
+    }
+  };
+
+  dispatch(setBuyNowItem(buyNowData)); // Redux mein set kiya
+  navigate("/checkout?type=buynow");   // Query parameter ke saath bheja
+};
 
   return (
     <>
@@ -204,6 +228,7 @@ const SingleItem = () => {
 
               <button 
                 disabled={isOutOfStock}
+                onClick={handleBuyNow}
                 className={`flex-1 font-black py-4 rounded-xl transition-all uppercase text-xs tracking-widest shadow-xl
                   ${!isOutOfStock 
                     ? 'bg-black text-white active:scale-95 hover:bg-gray-800 cursor-pointer' 

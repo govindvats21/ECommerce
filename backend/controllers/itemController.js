@@ -2,25 +2,40 @@ import Item from "../models/itemModel.js";
 import Shop from "../models/shopModel.js";
 import uploadOnCloudinary from "../utils/cloudnary.js";
 import { v2 as cloudinary } from "cloudinary";
-// --- 1. ADD ITEM ---
+
+// --- 1. ADD ITEM: Naya product shop mein add karne ke liye ---
 export const addItem = async (req, res) => {
   try {
-    const { name, category, brand, discountPrice, originalPrice, stock, description, colors, sizes, ram, storage } = req.body;
-    
-    const toArray = (data) => data ? data.split(",").map(item => item.trim()) : [];
-    // Sabse important: images ko array [string] banana
-    let images = []; 
+    const {
+      name,
+      category,
+      brand,
+      discountPrice,
+      originalPrice,
+      stock,
+      description,
+      colors,
+      sizes,
+      ram,
+      storage,
+    } = req.body;
 
-// addItem function ke andar loop ko aise badlein:
-if (req.files && req.files.length > 0) {
-  for (let i = 0; i < req.files.length; i++) {
-    // req.files[i].path ki jagah .buffer bhej rahe hain
-    const uploadedUrl = await uploadOnCloudinary(req.files[i].buffer); 
-    if (uploadedUrl) {
-      images.push(uploadedUrl);
+    // String data ko array mein convert karne ka helper function
+    const toArray = (data) =>
+      data ? data.split(",").map((item) => item.trim()) : [];
+
+    let images = [];
+
+    // Multiple images handling (Vercel ke liye buffer use ho raha hai)
+    if (req.files && req.files.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        // req.files[i].path ki jagah .buffer bhej rahe hain
+        const uploadedUrl = await uploadOnCloudinary(req.files[i].buffer);
+        if (uploadedUrl) {
+          images.push(uploadedUrl);
+        }
+      }
     }
-  }
-}
 
     const owner = req.userId;
     const shop = await Shop.findOne({ owner });
@@ -29,8 +44,7 @@ if (req.files && req.files.length > 0) {
       return res.status(400).json({ message: "Shop not found" });
     }
 
-
-    // Naye fields (brand, stock) ke saath item create karein
+    // Naye fields (brand, stock) ke saath item database mein create ho raha hai
     const item = await Item.create({
       name,
       category,
@@ -41,18 +55,18 @@ if (req.files && req.files.length > 0) {
       description,
       images, // [url1, url2, ...]
       shop: shop._id,
-      attributes:{
-        colors:toArray(colors),
+      attributes: {
+        colors: toArray(colors),
         sizes: toArray(sizes),
         ram: toArray(ram),
         storage: toArray(storage),
-       
-      }
+      },
     });
 
+    // Shop model ke items array mein naye item ki ID save ho rahi hai
     shop.items.push(item._id);
     await shop.save();
-    
+
     await shop.populate({
       path: "items",
       options: { sort: { createdAt: -1 } },
@@ -61,15 +75,20 @@ if (req.files && req.files.length > 0) {
     return res.status(201).json(shop);
   } catch (error) {
     console.error("Add Item Error:", error.message);
-    return res.status(500).json({ message: "Add item error", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Add item error", error: error.message });
   }
 };
 
-// --- 2. GET ITEM BY ID ---
+// --- 2. GET ITEM BY ID: Single product details fetch karne ke liye ---
 export const getItemById = async (req, res) => {
   try {
     const { itemId } = req.params;
-    const item = await Item.findById(itemId).populate("shop", "name image city");
+    const item = await Item.findById(itemId).populate(
+      "shop",
+      "name image city",
+    );
     if (!item) return res.status(400).json({ message: "item not found" });
     return res.status(200).json(item);
   } catch (error) {
@@ -77,65 +96,76 @@ export const getItemById = async (req, res) => {
   }
 };
 
-// --- 3. EDIT ITEM ---
+// --- 3. EDIT ITEM: Purane product ki details change karne ke liye ---
 export const editItemById = async (req, res) => {
   try {
     const { itemId } = req.params;
-    const { name, category, brand, discountPrice, originalPrice, stock, description, colors, sizes, ram, storage } = req.body;
+    const {
+      name,
+      category,
+      brand,
+      discountPrice,
+      originalPrice,
+      stock,
+      description,
+      colors,
+      sizes,
+      ram,
+      storage,
+    } = req.body;
 
     const item = await Item.findById(itemId);
     if (!item) return res.status(400).json({ message: "Item not found" });
 
-    // Helper function to handle strings/arrays
     const toArray = (data) => {
       if (!data) return [];
       if (Array.isArray(data)) return data;
-      return data.split(",").map(i => i.trim());
+      return data.split(",").map((i) => i.trim());
     };
 
-    // 1. Purani images ko default rakhein
-    let images = item.images || []; 
+    // Purani images ko default rakha gaya hai
+    let images = item.images || [];
 
-    // 2. Nayi images check (Vercel Buffer Logic)
+    // Nayi images update logic (Agar user ne upload ki ho)
     if (req.files && req.files.length > 0) {
       const newImages = [];
       for (let i = 0; i < req.files.length; i++) {
-        // .path ki jagah .buffer pass karein (Vercel Fix)
         const uploadedUrl = await uploadOnCloudinary(req.files[i].buffer);
         if (uploadedUrl) newImages.push(uploadedUrl);
       }
-      images = newImages; // Nayi images se replace
+      images = newImages;
     }
 
-    // 3. Basic Fields Update
+    // Ek ek karke saare fields update ho rahe hain
     item.name = name || item.name;
     item.category = category || item.category;
     item.brand = brand || item.brand;
-    item.discountPrice = discountPrice !== undefined ? Number(discountPrice) : item.discountPrice;
-    item.originalPrice = originalPrice !== undefined ? Number(originalPrice) : item.originalPrice;
+    item.discountPrice =
+      discountPrice !== undefined ? Number(discountPrice) : item.discountPrice;
+    item.originalPrice =
+      originalPrice !== undefined ? Number(originalPrice) : item.originalPrice;
     item.stock = stock !== undefined ? Number(stock) : item.stock;
     item.description = description || item.description;
     item.images = images;
 
-    // 4. Attributes Update (Mobiles/Fashion etc.)
+    // Attributes (Color, Size etc.) update ho rahe hain
     if (item.attributes) {
       if (colors !== undefined) item.attributes.colors = toArray(colors);
       if (sizes !== undefined) item.attributes.sizes = toArray(sizes);
       if (ram !== undefined) item.attributes.ram = toArray(ram);
       if (storage !== undefined) item.attributes.storage = toArray(storage);
     } else {
-      // Agar attributes pehle se nahi hain toh naya object banayein
       item.attributes = {
         colors: toArray(colors),
         sizes: toArray(sizes),
         ram: toArray(ram),
-        storage: toArray(storage)
+        storage: toArray(storage),
       };
     }
 
     await item.save();
 
-    // 5. Shop Data fetch karein (frontend state update ke liye)
+    // Latest shop data frontend ko wapas bheja ja raha hai
     const shop = await Shop.findOne({ owner: req.userId })
       .populate("owner")
       .populate({
@@ -146,29 +176,31 @@ export const editItemById = async (req, res) => {
     return res.status(200).json(shop);
   } catch (error) {
     console.error("Edit Error:", error.message);
-    return res.status(500).json({ message: `Edit item error: ${error.message}` });
+    return res
+      .status(500)
+      .json({ message: `Edit item error: ${error.message}` });
   }
 };
-// --- 4. DELETE ITEM ---
 
-
-
+// --- 4. DELETE ITEM: Product ko DB aur Cloudinary dono se delete karna ---
 export const deleteItem = async (req, res) => {
   try {
     const { itemId } = req.params;
 
-    // 1. Pehle item find karein taaki uski images ke URLs mil sakein
     const item = await Item.findById(itemId);
     if (!item) return res.status(400).json({ message: "item not found" });
 
-    // 2. Cloudinary se images delete karein
+    // Cloudinary storage se physical files delete ho rahi hain
     if (item.images && item.images.length > 0) {
       for (const imageUrl of item.images) {
         try {
-          // URL se public_id nikalne ka logic: 
-          // URL: .../items/vats_12345.jpg -> ID: items/vats_12345
-          const publicId = imageUrl.split('/').slice(-2).join('/').split('.')[0];
-          
+          // URL se public_id extract karne ka logic
+          const publicId = imageUrl
+            .split("/")
+            .slice(-2)
+            .join("/")
+            .split(".")[0];
+
           await cloudinary.uploader.destroy(publicId);
         } catch (err) {
           console.error("Cloudinary Delete Error:", err.message);
@@ -176,10 +208,10 @@ export const deleteItem = async (req, res) => {
       }
     }
 
-    // 3. Database se item delete karein
+    // Database se product ki entry delete ho rahi hai
     await Item.findByIdAndDelete(itemId);
 
-    // 4. Shop update logic (same as before)
+    // Shop ke items array se is product ki ID filter ho rahi hai
     const shop = await Shop.findOne({ owner: req.userId });
     if (shop) {
       shop.items = shop.items.filter((i) => i.toString() !== itemId);
@@ -192,29 +224,34 @@ export const deleteItem = async (req, res) => {
 
     return res.status(200).json(shop);
   } catch (error) {
-    return res.status(500).json({ message: `delete item error ${error.message}` });
+    return res
+      .status(500)
+      .json({ message: `delete item error ${error.message}` });
   }
 };
 
-// --- 5. GET ALL ITEMS ---
+// --- 5. GET ALL ITEMS: Home page ke liye saare products ---
 export const getAllItems = async (req, res) => {
   try {
     const items = await Item.find({}).populate("shop", "name image city");
     return res.status(200).json(items);
   } catch (error) {
-    return res.status(500).json({ message: `get items error ${error.message}` });
+    return res
+      .status(500)
+      .json({ message: `get items error ${error.message}` });
   }
 };
 
-// --- 6. SEARCH ITEMS ---
+// --- 6. SEARCH ITEMS: Search bar ke liye logic ---
 export const searchItmes = async (req, res) => {
   try {
     const { query } = req.query;
     if (!query) {
-       const items = await Item.find({}).populate("shop", "name image");
-       return res.status(200).json(items);
+      const items = await Item.find({}).populate("shop", "name image");
+      return res.status(200).json(items);
     }
 
+    // Regex ka use karke partial match search kiya ja raha hai
     const items = await Item.find({
       $or: [
         { name: { $regex: query, $options: "i" } },
@@ -229,18 +266,20 @@ export const searchItmes = async (req, res) => {
   }
 };
 
-// --- 7. GET ITEMS BY SHOP ---
+// --- 7. GET ITEMS BY SHOP: Kisi specific shop ke products dekhne ke liye ---
 export const getItemsByShop = async (req, res) => {
   try {
     const { shopId } = req.params;
     const shop = await Shop.findById(shopId).populate("items");
     if (!shop) return res.status(400).json({ message: "shop not found" });
-    
+
     return res.status(200).json({
       shop,
       items: shop.items,
     });
   } catch (error) {
-    return res.status(500).json({ message: `get item by shop error ${error.message}` });
+    return res
+      .status(500)
+      .json({ message: `get item by shop error ${error.message}` });
   }
 };

@@ -32,7 +32,7 @@ const EditItem = () => {
         setValue("discountPrice", item.discountPrice);
         setValue("description", item.description);
         setValue("category", item.category);
-        setValue("stock", item.stock); // Stock value set ho rahi hai
+        setValue("stock", item.stock);
 
         if (item.attributes) {
           setValue("colors", item.attributes.colors?.join(", "));
@@ -70,7 +70,7 @@ const EditItem = () => {
       formData.append("category", details.category);
       formData.append("originalPrice", details.originalPrice);
       formData.append("discountPrice", details.discountPrice);
-      formData.append("stock", details.stock || 0); // Stock value append ho rahi hai
+      formData.append("stock", details.stock || 0);
       formData.append("description", details.description);
 
       const attributes = {

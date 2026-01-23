@@ -39,7 +39,6 @@ axios.defaults.withCredentials = true;
 // 🔥 Filhal Localhost URL
 export const serverURL = "https://e-commerce-backend-one-inky.vercel.app";
 
-
 // AXIOS INTERCEPTOR: Token management
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
@@ -53,23 +52,20 @@ const App = () => {
   const { userData } = useSelector((state) => state.user);
 
   // Saare data fetching hooks
-  useGetCurrentUser(); 
-  useGetCity();        
-  useGetMyShop();      
-  useGetShopsByCity(); 
-  useGetItemsByCity(); 
-  useGetMyOrders();    
-  useGetupdateLocation(); 
-
-  // Socket logic poori tarah se remove kar di gayi hai
-  // Isse localhost aur deployment dono par koi connection error nahi aayega
+  useGetCurrentUser();
+  useGetCity();
+  useGetMyShop();
+  useGetShopsByCity();
+  useGetItemsByCity();
+  useGetMyOrders();
+  useGetupdateLocation();
 
   return (
     <>
       <Nav />
       <div className="pt-[75px]">
         <Routes>
-          <Route path="/" element={<Home />} /> 
+          <Route path="/" element={<Home />} />
           <Route path="/all-products" element={<AllProducts />} />
           <Route path="/single-item/:itemId" element={<SingleItem />} />
           <Route path="/shop/:shopId" element={<Shop />} />
@@ -78,17 +74,46 @@ const App = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Auth Routes */}
-          <Route path="/signup" element={!userData ? <Signup /> : <Navigate to="/" />} />
-          <Route path="/signin" element={!userData ? <Signin /> : <Navigate to="/" />} />
-          
+          <Route
+            path="/signup"
+            element={!userData ? <Signup /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/signin"
+            element={!userData ? <Signin /> : <Navigate to="/" />}
+          />
+
           {/* Protected Routes */}
-          <Route path="/create-edit-shop" element={userData ? <CreateAndEditShop /> : <Navigate to="/signin" />} />
-          <Route path="/add-item" element={userData ? <AddItem /> : <Navigate to="/signin" />} />
-          <Route path="/edit-item/:id" element={userData ? <EditItem /> : <Navigate to="/signin" />} />
-          <Route path="/checkout" element={userData ? <CheckOut /> : <Navigate to="/signin" />} />
-          <Route path="/order-placed" element={userData ? <OrderPlaced /> : <Navigate to="/signin" />} />
-          <Route path="/my-orders" element={userData ? <MyOrders /> : <Navigate to="/signin" />} />
-          <Route path="/track-order/:orderId" element={userData ? <TrackOrderPage /> : <Navigate to="/signin" />} />
+          <Route
+            path="/create-edit-shop"
+            element={
+              userData ? <CreateAndEditShop /> : <Navigate to="/signin" />
+            }
+          />
+          <Route
+            path="/add-item"
+            element={userData ? <AddItem /> : <Navigate to="/signin" />}
+          />
+          <Route
+            path="/edit-item/:id"
+            element={userData ? <EditItem /> : <Navigate to="/signin" />}
+          />
+          <Route
+            path="/checkout"
+            element={userData ? <CheckOut /> : <Navigate to="/signin" />}
+          />
+          <Route
+            path="/order-placed"
+            element={userData ? <OrderPlaced /> : <Navigate to="/signin" />}
+          />
+          <Route
+            path="/my-orders"
+            element={userData ? <MyOrders /> : <Navigate to="/signin" />}
+          />
+          <Route
+            path="/track-order/:orderId"
+            element={userData ? <TrackOrderPage /> : <Navigate to="/signin" />}
+          />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

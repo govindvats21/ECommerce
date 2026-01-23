@@ -10,7 +10,7 @@ const shopSchema = new mongoose.Schema({
     },
     city: {
         type: String,
-        required: true // Ye sirf address ke liye hai, filter ke liye nahi
+        required: true
     },
     state: {
         type: String,

@@ -7,12 +7,12 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_KEY,
-  authDomain: "e-commerce-f37d6.firebaseapp.com",
-  projectId: "e-commerce-f37d6",
-  storageBucket: "e-commerce-f37d6.firebasestorage.app",
-  messagingSenderId: "898731143842",
-  appId: "1:898731143842:web:853f5f8025e5637a809dfb"
+ apiKey:import.meta.env.VITE_FIREBASE_KEY ,
+  authDomain: "vats-31b80.firebaseapp.com",
+  projectId: "vats-31b80",
+  storageBucket: "vats-31b80.firebasestorage.app",
+  messagingSenderId: "418875225852",
+  appId: "1:418875225852:web:997c48a02b1138a89d0979"
 };
 
 // Initialize Firebase

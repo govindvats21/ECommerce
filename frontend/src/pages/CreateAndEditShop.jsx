@@ -15,7 +15,7 @@ const CreateAndEditShop = () => {
 
   const { myShopData } = useSelector((state) => state.owner);
   const { userCity, userState, userAddress } = useSelector(
-    (state) => state.user
+    (state) => state.user,
   );
 
   const [frontedImage, setFrontedImage] = useState(myShopData?.image || null);
@@ -42,29 +42,24 @@ const CreateAndEditShop = () => {
   });
 
   // Form submission
-  const formSubmit = async(details) => {
+  const formSubmit = async (details) => {
     try {
       const formData = new FormData();
       formData.append("name", details.name);
       formData.append("city", details.city);
       formData.append("state", details.state);
       formData.append("address", details.address);
-
       if (backendImage) {
         formData.append("image", backendImage);
       }
 
-    //  console.log(Object.fromEntries(formData));
-
-
       const res = await axios.post(
         `${serverURL}/api/shop/create-edit`,
         formData,
-        { withCredentials: true }
+        { withCredentials: true },
       );
       dispatch(setMyShopData(res.data));
-    console.log(res.data);
-    
+      console.log(res.data);
       navigate("/");
     } catch (error) {
       console.log("Error submitting form:", error);
@@ -82,9 +77,8 @@ const CreateAndEditShop = () => {
         />
       </div>
 
-      {/* Form Card */}
       <div className="max-w-lg w-full bg-white shadow-xl rounded-2xl p-8 border border-green-100">
-        {/* Icon & Heading */}
+      
         <div className="flex flex-col items-center mb-6">
           <div className="bg-green-100 p-4 rounded-full shadow-inner mb-4">
             <FaUtensils className="text-green-600 w-16 h-16 sm:w-20 sm:h-20" />
@@ -96,13 +90,10 @@ const CreateAndEditShop = () => {
             Fill out the details to get your shop online 🚀
           </p>
         </div>
-
-        {/* Form */}
         <form
           onSubmit={handleSubmit(formSubmit)}
           className="flex flex-col gap-5"
         >
-          {/* Shop Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Shop Name
@@ -118,7 +109,6 @@ const CreateAndEditShop = () => {
             )}
           </div>
 
-          {/* Image Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Shop Image

@@ -20,18 +20,16 @@ const OwnerOrderCard = ({ data }) => {
     fetchRiders();
   }, []);
 
-  // ✅ Image Path Fix (Array se pehli image nikalne ke liye)
   const getImageUrl = (item) => {
     const path = item?.images?.[0] || item?.item?.images?.[0];
     if (!path) return "https://placehold.co/400x400?text=No+Image";
     return path.startsWith("http") ? path : `${serverURL}/${path.replace(/\\/g, "/")}`;
   };
 
-  // ✅ Status Update Logic (ShopId fix ke saath)
   const handleUpdateStatus = async (newStatus) => {
     try {
       const orderId = data._id;
-      // Database mein shopOrders ek array hai, isliye [0] se ID nikal rahe hain
+
       const shopId = data.shopOrders?.[0]?.shop?._id || data.shopOrders?.[0]?.shop;
 
       if (newStatus === "out of delivery" && !selectedRider) {
@@ -55,7 +53,6 @@ const OwnerOrderCard = ({ data }) => {
     }
   };
 
-  // Helper: Puraane code ki tarah bar-bar [0] na likhna pade
   const currentShopOrder = data?.shopOrders?.[0];
 
   const displayAddress = data?.deliveryAddress?.text || 
