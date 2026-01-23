@@ -92,35 +92,47 @@ export const signIn = async (req, res) => {
 // --- GOOGLE AUTH ---
 export const googleAuth = async (req, res) => {
   try {
-    const { fullName, email, role, mobile } = req.body;
+    const { fullName, email, role, mobile, location } = req.body;
+
+    // Check karo user pehle se hai ya nahi
     let user = await User.findOne({ email });
 
     if (!user) {
+      // Agar naya user hai, toh check karo mobile unique hai ya nahi
+      const existingMobile = await User.findOne({ mobile });
+      if (existingMobile) {
+        return res.status(400).json({ 
+          message: "Mobile number already registered with another account." 
+        });
+      }
+
+      // Naya user create karo
       user = await User.create({
         fullName,
         email,
-        role: role || "customer", // Default role
-        mobile: mobile || "",
-        // Google users ke liye default location
-        location: { type: "Point", coordinates: [77.1025, 28.7041] }
+        role: role || "user",
+        mobile,
+        location: location || { type: "Point", coordinates: [77.1025, 28.7041] }
       });
     }
 
     const token = genToken(user._id);
 
+    // Cookie set karo (Safe and Secure)
     res.cookie("token", token, {
       httpOnly: true,
-      maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
-       secure: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: true, 
       sameSite: "none",
+      path: "/",
     });
 
     return res.status(200).json({ userData: user, token });
   } catch (error) {
-    return res.status(500).json({ message: `Google Auth error: ${error.message}` });
+    console.error("Controller Error:", error);
+    return res.status(500).json({ message: `Server Error: ${error.message}` });
   }
 };
-
 // --- FORGOT PASSWORD (OTP) ---
 export const sendOtp = async (req, res) => {
   try {

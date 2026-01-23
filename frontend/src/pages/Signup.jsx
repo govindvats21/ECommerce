@@ -79,29 +79,51 @@ const Signup = ({ closeModal, switchModal }) => {
       setLoading(false);
     }
   };
+const handleGoogleAuth = async () => {
+  const mobileValue = watch("mobile");
 
- // --- Google Auth ---
-  const handleGoogleAuth = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const { data } = await axios.post(`${serverURL}/api/auth/google-auth`, {
-          fullName: result.user.displayName,
-          email: result.user.email,
-          role,
-          mobile: result.user.phoneNumber || "",
-          location: { type: "Point", coordinates: [77.1025, 28.7041] }
-      }, { withCredentials: true });
-      
-      if (data.token) { localStorage.setItem("token", data.token); }
-      dispatch(setUserData(data.user || data));
-      localStorage.setItem("isLoggedIn", "true");
-      if (closeModal) closeModal();
-      navigate("/");
-    } catch (error) {
-      console.error("Google Signup Error");
-    }
-  };
+  // Pehle mobile check karo
+  if (!mobileValue || !/^[6-9]\d{9}$/.test(mobileValue)) {
+    setError("mobile", { 
+      type: "manual", 
+      message: "⚠️ Enter a valid 10-digit mobile number first" 
+    });
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    
+    // 1. Google se data lao
+    const result = await signInWithPopup(auth, provider);
+    
+    // 2. Apne backend (/google-auth) par data bhejo
+    const { data } = await axios.post(`${serverURL}/api/auth/google-auth`, {
+        fullName: result.user.displayName, // Google ka name
+        email: result.user.email,         // Google ki email
+        role: role || "user",             // Form ka selected role
+        mobile: mobileValue,              // Form ka mobile number
+        location: { type: "Point", coordinates: [77.1025, 28.7041] }
+    }, { withCredentials: true });
+    
+    // 3. Login success handling
+    if (data.token) localStorage.setItem("token", data.token);
+    dispatch(setUserData(data.userData || data.user));
+    localStorage.setItem("isLoggedIn", "true");
+    
+    if (closeModal) closeModal();
+    navigate("/");
+
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    const msg = error.response?.data?.message || "Auth failed. Try again.";
+    setError("email", { type: "manual", message: msg });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const primaryColor = "#ff4d2d";
 
