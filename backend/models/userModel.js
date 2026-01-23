@@ -19,22 +19,27 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: function() { return !this.resetOtp; }, // Sirf tab mangega jab OTP reset na ho raha ho
+      required: function() { 
+        return !this.isGoogleUser && !this.resetOtp; 
+      }, 
       minlength: [6, "Password must be at least 6 characters long"],
-      select: false, // Jab hum user search karenge, password bypass ho jayega security ke liye
+      select: false, 
     },
-   mobile: {
-  type: String,
-  required: [true, "Mobile number is required"],
-  unique: true,
-  validate: {
-    validator: function(v) {
-      // Indian Mobile Number Regex
-      return /^[6-9]\d{9}$/.test(v) && !/^(.)\1{9}$/.test(v);
+    isGoogleUser: {
+      type: Boolean,
+      default: false
     },
-    message: props => `${props.value} is not a valid mobile number!`
-  }
-},
+    mobile: {
+      type: String,
+      required: [true, "Mobile number is required"],
+      unique: true,
+      validate: {
+        validator: function(v) {
+          return /^[6-9]\d{9}$/.test(v) && !/^(.)\1{9}$/.test(v);
+        },
+        message: props => `${props.value} is not a valid mobile number!`
+      }
+    },
     role: {
       type: String,
       enum: {
@@ -64,7 +69,7 @@ const userSchema = new mongoose.Schema(
       },
       coordinates: { 
         type: [Number], 
-        default: [0, 0] // Default safe coordinates
+        default: [0, 0] 
       },
     },
     socketId: {
@@ -78,13 +83,11 @@ const userSchema = new mongoose.Schema(
   },
   { 
     timestamps: true,
-    // Isse JSON response clean ho jata hai
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
   }
 );
 
-// Geo-spatial index (Zaroori hai agar aap "Nearby Delivery Boy" search karoge)
 userSchema.index({ location: "2dsphere" });
 
 const User = mongoose.model("User", userSchema);

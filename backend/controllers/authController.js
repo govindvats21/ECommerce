@@ -112,6 +112,7 @@ export const googleAuth = async (req, res) => {
         email,
         role: role || "user",
         mobile,
+        isGoogleUser: true,
         location: location || { type: "Point", coordinates: [77.1025, 28.7041] }
       });
     }
