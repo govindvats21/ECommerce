@@ -81,7 +81,6 @@ const Signup = ({ closeModal, switchModal }) => {
   };
 
   // --- Google Auth ---
-// Signup.jsx mein handleGoogleAuth ko update karein
 const handleGoogleAuth = async () => {
   const mobileValue = watch("mobile");
 
@@ -94,7 +93,6 @@ const handleGoogleAuth = async () => {
   setLoading(true);
   try {
     const provider = new GoogleAuthProvider();
-    // Isse domain check refresh ho jata hai
     const result = await signInWithPopup(auth, provider);
     
     // Backend call
