@@ -96,7 +96,7 @@ const SingleItem = () => {
   return (
     <>
       <div className="min-h-screen bg-white">
-        <Nav />
+             <Nav hideSearch={true} />
         <div className="flex flex-col md:flex-row gap-12 md:mt-20 px-6 md:px-20 lg:px-32">
           
           <div className="w-full md:w-1/2 flex flex-col-reverse md:flex-row gap-4">
