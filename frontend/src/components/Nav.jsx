@@ -9,7 +9,7 @@ import { setSearchItems, setUserData, logoutUser } from "../redux/userSlice";
 import axios from "axios";
 import { serverURL } from "../App";
 
-const Nav = () => {
+const Nav = ({ hideSearch }) => {
   const { userData, userCity, cartItems } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -78,7 +78,7 @@ const Nav = () => {
         </div>
 
         {/* Search Bar - ONLY for User or Guests */}
-        {(!userData || userData?.role === "user") && (
+        {(!userData || userData?.role === "user") && !hideSearch && (
           <div className="hidden md:flex items-center flex-1 max-w-[500px] mx-8">
             <div
               className={`flex items-center w-full bg-gray-50 border-2 border-transparent focus-within:border-blue-600 focus-within:bg-white rounded-2xl h-[45px] transition-all px-4 gap-3`}
