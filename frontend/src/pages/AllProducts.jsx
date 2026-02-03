@@ -81,7 +81,7 @@ const AllProducts = () => {
 
   return (
     <div className="bg-[#f8f8f8] min-h-screen font-sans antialiased">
-      <Nav />
+      <Nav hideSearch={true} />
 
       <div className="pt-4 px-3 md:px-8 lg:px-12 max-w-[1600px] mx-auto">
         {/* Header */}
